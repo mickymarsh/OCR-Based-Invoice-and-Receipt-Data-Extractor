@@ -1,41 +1,16 @@
 # routes/auth.py
-from datetime import datetime
-from typing import Optional
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
-from ..services.auth_service import create_user_email, verify_google_token
+from fastapi import APIRouter, HTTPException, Depends
+from ..services.auth_service import save_user
+from ..models.user import User
+from core.firebase_auth import verify_firebase_token
+
 
 router = APIRouter()
 
-class EmailSignUp(BaseModel):
-    email: EmailStr
-    password: str
-    name: str
-    nic_number: str
-    gender: str
-    marital_status: str
-    home_town: str
-    birthday: datetime
-    occupation: str
-    monthly_salary: int
-    family_member_count: int
-    provider: str
+@router.post("/setup-profile")
+def setup_profile(data: User, decoded_token=Depends(verify_firebase_token)):
+    uid = decoded_token["uid"]
+    email = decoded_token.get("email")
 
-class GoogleSignIn(BaseModel):
-    id_token: str  # This comes from frontend Google sign-in
-
-@router.post("/signup-email")
-def signup_email(data: EmailSignUp):
-    try:
-        user = create_user_email(data.dict())
-        return {"message": "User created", "user": user.dict()}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.post("/signin-google")
-def signin_google(data: GoogleSignIn):
-    try:
-        user = verify_google_token(data.id_token)
-        return {"message": "Google sign-in success", "user": user.dict()}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    user_doc = save_user(uid=uid, email=email, profile_data=data.dict())
+    return {"message": "Profile saved successfully", "user": user_doc}
