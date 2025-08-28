@@ -19,4 +19,3 @@ class User(BaseModel):
     cluster_id: Optional[int] = None
     family_member_count: int
     email: EmailStr
-    provider: str
