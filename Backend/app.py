@@ -1,10 +1,19 @@
 from fastapi import FastAPI
 import uvicorn
 from core.config import db
+from fastapi.middleware.cors import CORSMiddleware
 
 from Maduni.routes import auth
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:58331"],  # Add your frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():

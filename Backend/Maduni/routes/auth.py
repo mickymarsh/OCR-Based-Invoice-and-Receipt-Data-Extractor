@@ -12,5 +12,5 @@ def setup_profile(data: User, decoded_token=Depends(verify_firebase_token)):
     uid = decoded_token["uid"]
     email = decoded_token.get("email")
 
-    user_doc = save_user(uid=uid, email=email, profile_data=data.dict())
+    user_doc = save_user(uid=uid, email=email, user_data=data.dict())
     return {"message": "Profile saved successfully", "user": user_doc}
