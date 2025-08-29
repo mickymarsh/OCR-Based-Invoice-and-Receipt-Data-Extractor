@@ -1,34 +1,35 @@
 from datetime import datetime
 from fastapi import HTTPException
-from firebase_admin import auth
+from firebase_admin import auth, firestore
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError
 from core.firestore import get_user_collection
 from ..models.user import User
 
 def save_user(uid: str, email: str, user_data: dict) -> User:
     """
-    user_data should be a dict containing all fields needed for the User model,
-    including email and password.
+    Save user profile data to Firestore (DO NOT create new Firebase user)
     """
     print("Received user_data:", user_data)  
-
-    email = user_data["email"]
-    password = user_data["password"]
-
-    print("Email:", email)
-    print("Password exists:", password is not None)
+    print("UID from token:", uid)
+    print("Email from token:", email)
 
     try:
-        #Create Firebase Auth user
-        user_record = auth.create_user(email=email, password=password)
-        uid = user_record.uid
-        print("Firebase user created. UID:", uid)
-
+        # Check if user already exists in Firestore
+        user_ref = get_user_collection().document(uid)
+        existing_user = user_ref.get()
+        
+        if existing_user.exists:
+            print("User already exists in Firestore, updating profile...")
+            # Update existing user
+            user_ref.update(user_data)
+            return User(**existing_user.to_dict())
+        
+        # Convert birthday string to datetime if needed
         birthday = user_data.get("birthday")
         if isinstance(birthday, str):
             birthday = datetime.fromisoformat(birthday.replace("Z", "+00:00"))
 
-        #Prepare full user document
+        # Prepare user document for Firestore
         user_doc = {
             "uid": uid,
             "signup_at": datetime.utcnow(),
@@ -40,30 +41,21 @@ def save_user(uid: str, email: str, user_data: dict) -> User:
             "birthday": birthday,
             "occupation": user_data["occupation"],
             "monthly_salary": user_data["monthly_salary"],
-            "average_expenses_per_month": None,
-            "average_expenses_per_year": None,
+            "average_expenses_per_month": user_data.get("average_expenses_per_month"),
+            "average_expenses_per_year": user_data.get("average_expenses_per_year"),
             "cluster_id": None,
             "family_member_count": user_data["family_member_count"],
             "email": email,
-            "provider": "email"
-            # Note: never store password in Firestore
+            "provider": "email",
+            "created_at": firestore.SERVER_TIMESTAMP
         }
 
-        #Save in Firestore
-        get_user_collection().document(uid).set(user_doc)
+        # Save to Firestore only (NO auth.create_user!)
+        user_ref.set(user_doc)
 
-        print(f"User created successfully: {email} (UID: {uid})")
+        print(f"User profile saved successfully: {email} (UID: {uid})")
         return User(**user_doc)
 
-    except auth.EmailAlreadyExistsError:
-        raise HTTPException(status_code=409, detail="User already exists.")
-    except ExpiredIdTokenError:
-        raise ValueError("Token has expired")
-    except RevokedIdTokenError:
-        raise ValueError("Token has been revoked")
-    except InvalidIdTokenError:
-        raise ValueError("Invalid token")
     except Exception as e:
         print(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="Something went wrong while creating the user.")
-
+        raise HTTPException(status_code=500, detail="Something went wrong while saving the user profile.")
