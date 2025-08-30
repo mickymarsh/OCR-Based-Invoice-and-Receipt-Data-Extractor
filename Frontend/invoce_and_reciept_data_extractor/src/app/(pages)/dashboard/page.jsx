@@ -1,4 +1,3 @@
-import Navbar from "@/components/navbar";
 import { auth } from "@/lib/firebase";
 
 export default function Dashboard() {
@@ -7,7 +6,6 @@ export default function Dashboard() {
 
   return (
     <main>
-      <Navbar></Navbar>
       <h1>Hi, {userName}!</h1>
       <p>Welcome to your dashboard.</p>
       <ul>
