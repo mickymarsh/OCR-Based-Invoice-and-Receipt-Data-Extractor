@@ -1,5 +1,84 @@
 @import "tailwindcss";
 
+@keyframes star-fall {
+  0% {
+    transform: translateY(-100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes star-fall-reverse {
+  0% {
+    transform: translateY(-100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) translateX(-100px) rotate(-360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes star-fall-long {
+  0% {
+    transform: translateY(-150vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(150vh) translateX(200px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@keyframes star-fall-fast {
+  0% {
+    transform: translateY(-80vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(80vh) translateX(50px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.animate-star-fall { animation: star-fall 8s linear infinite; }
+.animate-star-fall-reverse { animation: star-fall-reverse 10s linear infinite; }
+.animate-star-fall-long { animation: star-fall-long 15s linear infinite; }
+.animate-star-fall-fast { animation: star-fall-fast 5s linear infinite; }
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
