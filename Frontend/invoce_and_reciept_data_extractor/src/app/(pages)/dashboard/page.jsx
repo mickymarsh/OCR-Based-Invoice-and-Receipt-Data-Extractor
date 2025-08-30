@@ -1,8 +1,13 @@
+import Navbar from "@/components/navbar";
+import { auth } from "@/lib/firebase";
+
 export default function Dashboard() {
   const userName = "Maduni"; // You can replace with actual user data later
+  console.log(auth.currentUser);
 
   return (
-    <main style={{ padding: "2rem" }}>
+    <main>
+      <Navbar></Navbar>
       <h1>Hi, {userName}!</h1>
       <p>Welcome to your dashboard.</p>
       <ul>
