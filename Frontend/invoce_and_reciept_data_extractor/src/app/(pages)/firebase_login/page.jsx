@@ -90,7 +90,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
             <input
-              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               type="email"
               placeholder="Enter your email"
               value={email}
@@ -100,7 +100,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
             <input
-              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               type="password"
               placeholder="Enter your password"
               value={password}
