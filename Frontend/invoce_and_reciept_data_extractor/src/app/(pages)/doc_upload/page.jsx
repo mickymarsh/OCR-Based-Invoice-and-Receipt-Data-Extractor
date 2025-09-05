@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -10,7 +9,19 @@ export default function UploadPage() {
   const [editing, setEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const router = useRouter();
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (files && files.length > 0) {
+      const url = URL.createObjectURL(files[0]);
+      setPreviewUrl(url);
+      return () => {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        setPreviewUrl(null);
+      };
+    }
+    setPreviewUrl(null);
+  }, [files]);
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
@@ -78,116 +89,84 @@ export default function UploadPage() {
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Upload Documents</h1>
-          <p className="mt-2 text-sm text-gray-600">Upload receipts and invoices to extract structured data</p>
-        </div>
+  <div className="min-h-screen bg-gray-50 py-12 pl-4 pr-0 sm:pl-6 lg:pl-8">
+      <div className="w-full flex gap-6">
+        {/* Left content column */}
+        <div className="flex-1">
+          <div className="text-left mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Upload Documents</h1>
+            <p className="mt-2 text-sm text-gray-600">Upload receipts and invoices to extract structured data</p>
+          </div>
 
-        {/* Drag and Drop File Upload Section */}
-        <div
-          className={`border-2 border-blue-400 bg-blue-50 rounded-lg p-6 mb-8 shadow-sm transition-all ${dragActive ? 'border-blue-700 bg-blue-100' : ''}`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          <div className="flex flex-col sm:flex-row items-center justify-between">
-            <div className="flex-1">
+          <div className="border-2 border-blue-400 bg-blue-50 rounded-lg p-6 mb-6 shadow-sm transition-all" onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
+            <div className="flex items-center justify-between">
               <label className="block text-base font-semibold text-gray-700 mb-2">File Upload</label>
+              <div>
+                <input id="file-upload" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} className="hidden" />
+                <label htmlFor="file-upload" className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded cursor-pointer hover:bg-blue-700 transition-all">Select Files</label>
+              </div>
             </div>
-            <div className="flex-1 flex justify-center">
-              <input
-                id="file-upload"
-                type="file"
-                multiple
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <label htmlFor="file-upload" className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded cursor-pointer hover:bg-blue-700 transition-all">
-                Select Files
-              </label>
-            </div>
-          </div>
-          <div className="mt-4 flex flex-col items-center">
-            <div className="w-full text-center text-blue-700 font-semibold">
-              Drag & Drop files here
-            </div>
-          </div>
-          {/* Action bar like screenshot */}
-          <div className="mt-4 bg-blue-600 rounded-b-lg px-4 py-2 flex items-center space-x-4 text-white text-sm">
-            <span className="font-bold">+ |</span>
-            <button type="button" className="hover:underline">Edit</button>
-            <button type="button" className="hover:underline">Copy</button>
-            <button type="button" className="hover:underline">Remove</button>
-          </div>
-          {/* Show selected files */}
-          {files.length > 0 && (
             <div className="mt-4">
-              <span className="text-sm text-gray-700">Selected Files:</span>
-              <ul className="list-disc ml-6">
-                {files.map((file, idx) => (
-                  <li key={idx} className="text-gray-800 text-sm">{file.name}</li>
-                ))}
-              </ul>
+              <div className={`w-full text-center text-blue-700 font-semibold ${dragActive ? 'bg-blue-100' : ''}`}>Drag & Drop files here</div>
             </div>
-          )}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleUpload}
-              disabled={uploading || files.length === 0}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {uploading ? 'Uploading...' : 'Upload and Extract'}
-            </button>
+
+            {files.length > 0 && (
+              <div className="mt-4">
+                <span className="text-sm text-gray-700">Selected Files:</span>
+                <ul className="list-disc ml-6">
+                  {files.map((file, idx) => (
+                    <li key={idx} className="text-gray-800 text-sm">{file.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button onClick={handleUpload} disabled={uploading || files.length === 0} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50">{uploading ? 'Uploading...' : 'Upload and Extract'}</button>
+            </div>
+          </div>
+
+          {/* Preview area (left) */}
+          <div className="rounded-lg p-2 bg-white shadow-sm flex items-center justify-center">
+            {previewUrl ? (
+              // smaller responsive preview: full width on very small screens, fixed 20rem width on sm+
+              <img src={previewUrl} alt="Preview" className="w-full sm:w-80 h-80 object-contain rounded" />
+            ) : (
+              <div className="w-full h-80 flex items-center justify-center text-gray-400">No preview available</div>
+            )}
           </div>
         </div>
 
-        {/* Sidebar for extracted data */}
-        {sidebarOpen && extractedData && (
-          <div className="fixed top-0 right-0 h-full w-96 bg-blue-50 shadow-xl z-50 transition-transform duration-300 flex flex-col" style={{transform: sidebarOpen ? 'translateX(0)' : 'translateX(100%)'}}>
-            <div className="flex justify-between items-center p-4 border-b border-blue-200">
-              <h2 className="text-xl font-semibold text-blue-900">Extracted Data</h2>
-              <button onClick={closeSidebar} className="text-blue-600 hover:text-blue-800 font-bold text-lg">&times;</button>
+        {/* Right sidebar column (animated width so it slides in from right without overlaying) */}
+        <aside
+          className={`flex flex-col bg-blue-50 rounded-lg shadow-xl transition-all duration-300 overflow-hidden ml-auto ${sidebarOpen && extractedData ? 'w-96 pointer-events-auto' : 'w-0 pointer-events-none'}`}
+          aria-hidden={!sidebarOpen || !extractedData}
+        >
+          <div className={`flex justify-between items-center p-4 border-b border-blue-200 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
+            <h2 className="text-xl font-semibold text-blue-900">{extractedData?.DocumentType ? (extractedData.DocumentType === 'receipt' ? 'Receipt' : (extractedData.DocumentType === 'invoice' ? 'Invoice' : 'Document')) : 'Extracted Data'}</h2>
+            <button onClick={closeSidebar} className="text-blue-600 hover:text-blue-800 font-bold text-lg">&times;</button>
+          </div>
+          <div className={`flex-1 p-6 overflow-y-auto min-h-0 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="grid grid-cols-1 gap-4">
+              {["Address","Date","Item","OrderId","Subtotal","Tax","Title","TotalPrice"].map((field) => (
+                <div key={field} className="mb-4">
+                  <label className="block text-sm font-medium text-blue-700 capitalize">{field}</label>
+                  {editing ? (
+                    <input type="text" value={extractedData?.[field] || ""} onChange={(e) => handleDataChange(field, e.target.value)} className="mt-1 block w-full border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-blue-100 text-blue-900 font-bold" />
+                  ) : (
+                    <p className="mt-1 text-sm text-blue-900">{extractedData?.[field] || ""}</p>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="flex-1 p-6 overflow-y-auto min-h-0">
-              <div className="grid grid-cols-1 gap-4">
-                {["Address","Date","Item","OrderId","Subtotal","Tax","Title","TotalPrice"].map((field) => (
-                  <div key={field} className="mb-4">
-                    <label className="block text-sm font-medium text-blue-700 capitalize">{field}</label>
-                    {editing ? (
-                      <input
-                        type="text"
-                        value={extractedData?.[field] || ""}
-                        onChange={(e) => handleDataChange(field, e.target.value)}
-                        className="mt-1 block w-full border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-blue-100 text-blue-900 font-bold"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-blue-900">{extractedData?.[field] || ""}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-6">
-                <button
-                  onClick={handleEdit}
-                  className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                >
-                  {editing ? 'Cancel' : 'Edit'}
-                </button>
-                {editing && (
-                  <button
-                    onClick={handleSave}
-                    className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
-                  >
-                    Save Changes
-                  </button>
-                )}
-              </div>
+            <div className="flex justify-between mt-6">
+              <button onClick={handleEdit} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">{editing ? 'Cancel' : 'Edit'}</button>
+              {editing && (
+                <button onClick={handleSave} className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">Save Changes</button>
+              )}
             </div>
           </div>
-        )}
+        </aside>
       </div>
     </div>
   );
