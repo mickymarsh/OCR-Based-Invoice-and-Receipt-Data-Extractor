@@ -93,12 +93,38 @@ export default function Dashboard() {
         {/* Dashboard Header */}
         <div className="pt-8 px-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-              Hi, {userName}!
-            </h1>
-            <p className="text-xl text-blue-100 mb-8">
-              Welcome to your expense dashboard. Track and manage your spending.
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                  Hi, {userName}!
+                </h1>
+                <p className="text-xl text-blue-100">
+                  Welcome to your expense dashboard. Track and manage your spending.
+                </p>
+              </div>
+              
+              {/* Add Receipt/Invoice Button */}
+              <div className="mt-6 md:mt-0">
+                <button 
+                  className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-emerald-500/30 flex items-center space-x-3 group"
+                  onClick={() => {
+                    // Add your navigation or modal logic here
+                    console.log('Add Receipt/Invoice clicked');
+                  }}
+                >
+                  <span className="text-lg">📄</span>
+                  <span>Add Receipt/Invoice</span>
+                  <svg 
+                    className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
