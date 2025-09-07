@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 import os
 import logging
@@ -65,24 +67,22 @@ def classify_document(text: str) -> str:
         return _heuristic_classify(text)
 
     payload = {
-        # This payload will likely need to be adapted to the real API you use.
-        # The prompt below instructs the model to return exactly one of: receipt, invoice, or unknown.
-        # It includes clear heuristics and short examples so receipts (shop name, list of items, subtotal/total, date)
-        # are separated from invoices (the word "invoice", invoice number, issuer name, receiver/bill-to, paid/amount due).
         "prompt": f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
 
-Rules (use these to decide):
-- Receipt: typically shows a shop/store name at the top, a list of purchased items or quantities, prices, a Subtotal/Tax/Total or 'Total' line, and a date; may include 'Thank you' or payment method (cash/card/order id). If these features are present, return 'receipt'.
-- Invoice: explicitly uses the word 'invoice' or 'invoice number' (or 'Invoice #'), shows issuer/seller name and receiver/bill-to name, and payment-related terms like 'amount due', 'paid', 'due date', or payment instructions; if these features are present, return 'invoice'.
-- Unknown: if neither clearly matches, or if ambiguous, return 'unknown'.
+Rules:
+- Receipt: Shop/store name at top, list of items/quantities/prices, Subtotal/Tax/Total, date, payment method (cash/card/order id), 'Thank you'.
+- Invoice: If the text starts with 'INVOICE' or contains 'BILL TO', 'TAX', 'TOTAL', 'DATE', 'AMOUNT DUE', 'DUE UPON RECEIPT', treat as invoice even if other words are noisy, misspelled, or missing. Also treat as invoice if you see issuer/seller name, receiver/bill-to name, or invoice number. Payment terms and tax rate are strong invoice signals. If these features are present, return 'invoice'.
+- Unknown: If neither clearly matches, or ambiguous, return 'unknown'.
 
-Return requirements:
-- Respond with a single word only: receipt OR invoice OR unknown (no punctuation, no explanation).
+Return only a single word: receipt OR invoice OR unknown (no punctuation, no explanation).
 
 Examples (input -> expected):
 - "SuperMart\n1x Apple  $1.00\nSubtotal $1.00\nTax $0.05\nTotal $1.05\n2025-01-10" -> receipt
 - "INVOICE\nInvoice #1234\nBill To: Acme Co.\nAmount Due: $350.00" -> invoice
+- "[Company Name] INVOICE stcet Addters] Icay: Fnen [C00] Bod 0od0 Wenenn DATE Zok 421/ 2014 bILLTO CUSTOHEE Weace DuR Upon KettipE [Cralerent] Esurel Aadtftt] [Cn_ [ehone Addrt Drcmirnon HaeWE See L0bDI Ennn( cheut drkcvec 150J0 SudtOI 575-00 TAX RATE 4-2503 22.31 TOTAL 547.31 Icdem4Ye 4ete ueahonit Wolde @al CC #tot [Na7Fhens ? meaeteade" -> invoice
+- "INVOICE\nBILL TO: John Doe\nDATE: 2023-05-01\nTAX: 10.00\nTOTAL: 100.00" -> invoice
+- "INVOICE\nBILL TO: Jane Smith\nDUE UPON RECEIPT\nTAX RATE: 5%\nTOTAL: 250.00" -> invoice
 
 Now classify the following document text (do not add any extra text):\n\n"{text}"
 """,

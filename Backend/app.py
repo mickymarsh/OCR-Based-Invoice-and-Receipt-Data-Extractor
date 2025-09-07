@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
+from dotenv import load_dotenv
+
 from Janodi.routes import upload
 from core.config import db
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from Maduni.routes import auth
 
 app = FastAPI()
+load_dotenv()
 
 app.add_middleware(
     CORSMiddleware,
