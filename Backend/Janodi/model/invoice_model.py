@@ -121,7 +121,10 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
 
         if len(words) == 0:
             logger.info("No OCR words after filtering for %s", image_path)
-            return {k: "" for k in ["Address", "Date", "Item", "OrderId", "Subtotal", "Tax", "Title", "TotalPrice"]}
+            return {k: "" for k in [
+                "customer_address", "customer_name", "due_date", "invoice_date", "invoice_number", "invoice_subtotal", "invoice_total",
+                "item_description", "item_quantity", "item_total_price", "item_unit_price", "supplier_address", "supplier_name", "tax_amount", "tax_rate"
+            ]}
 
         encoding = processor(images=img, text=words, boxes=boxes, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
         # ensure bbox type
@@ -163,7 +166,56 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
             if mapped:
                 final[mapped] = " ".join(words_list)
 
-        return final
+        # Print all model output labels and their values for debugging and frontend display
+        print("Model output labels and values:")
+        for label, words_list in raw_struct.items():
+            print(f"{label}: {' '.join(words_list)}")
+        # Optionally, add these to the result for frontend display
+        model_labels = {f"model_label_{label}": ' '.join(words_list) for label, words_list in raw_struct.items()}
+
+        # Always return all requested fields, even if model returns only legacy fields
+        full_fields = [
+            "customer_address", "customer_name", "due_date", "invoice_date", "invoice_number", "invoice_subtotal", "invoice_total",
+            "item_description", "item_quantity", "item_total_price", "item_unit_price", "supplier_address", "supplier_name", "tax_amount", "tax_rate"
+        ]
+        result = {k: "" for k in full_fields}
+        # Map each requested field to its model label if available, else fallback to legacy mapping
+        field_to_label = {
+            "supplier_name": "SUPPLIER_NAME",
+            "supplier_address": "SUPPLIER_ADDRESS",
+            "customer_name": "CUSTOMER_NAME",
+            "customer_address": "CUSTOMER_ADDRESS",
+            "invoice_number": "INVOICE_NUMBER",
+            "invoice_date": "INVOICE_DATE",
+            "due_date": "DUE_DATE",
+            "item_description": "ITEM_DESCRIPTION",
+            "item_quantity": "ITEM_QUANTITY",
+            "item_unit_price": "ITEM_UNIT_PRICE",
+            "item_total_price": "ITEM_TOTAL_PRICE",
+            "invoice_subtotal": "INVOICE_SUBTOTAL",
+            "tax_rate": "TAX_RATE",
+            "tax_amount": "TAX_AMOUNT",
+            "invoice_total": "INVOICE_TOTAL"
+        }
+        for field, label in field_to_label.items():
+            result[field] = model_labels.get(f"model_label_{label}", "")
+        # Fallback to legacy mapping if model label is missing
+        if not result["invoice_number"]:
+            result["invoice_number"] = final.get("OrderId", "")
+        if not result["invoice_date"]:
+            result["invoice_date"] = final.get("Date", "")
+        if not result["invoice_subtotal"]:
+            result["invoice_subtotal"] = final.get("Subtotal", "")
+        if not result["invoice_total"]:
+            result["invoice_total"] = final.get("TotalPrice", "")
+        if not result["supplier_name"]:
+            result["supplier_name"] = final.get("Title", "")
+        # Add all model labels to result for frontend display
+        result.update(model_labels)
+        return result
     except Exception as e:
         logger.exception("Error extracting invoice structured data from %s: %s", image_path, e)
-        return {k: "" for k in ["Address", "Date", "Item", "OrderId", "Subtotal", "Tax", "Title", "TotalPrice"]}
+        return {k: "" for k in [
+            "customer_address", "customer_name", "due_date", "invoice_date", "invoice_number", "invoice_subtotal", "invoice_total",
+            "item_description", "item_quantity", "item_total_price", "item_unit_price", "supplier_address", "supplier_name", "tax_amount", "tax_rate"
+        ]}

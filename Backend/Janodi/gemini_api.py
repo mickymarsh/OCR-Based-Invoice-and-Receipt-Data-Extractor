@@ -20,13 +20,39 @@ def _heuristic_classify(text: str) -> str:
     """Lightweight keyword-based fallback classifier."""
     t = text.lower()
 
-    # Strong invoice indicators
-    invoice_keywords = ["invoice", "bill to", "invoice #", "invoice number", "amount due", "due date", "bill to:"]
+
+    # Expanded invoice indicators
+    invoice_keywords = [
+        "invoice", "bill to", "invoice #", "invoice number", "amount due", "due date", "bill to:",
+        "payment terms", "tax rate", "due upon receipt", "purchase order", "po number", "remit to",
+        "terms", "reference", "account number", "supplier", "customer", "net", "vat", "gst", "total due"
+    ]
     # Receipt indicators
-    receipt_keywords = ["subtotal", "receipt", "order id", "total", "cash", "card", "tax", "thank you", "qty"]
+    receipt_keywords = ["subtotal", "receipt", "order id", "total", "cash", "card", "tax", "thank you", "qty", "change", "item", "store", "shop", "payment method"]
 
     inv_score = sum(1 for k in invoice_keywords if k in t)
+    # If 'invoice' or fuzzy match is found, give full marks
+    fuzzy_invoice_patterns = [
+        r"invoice", r"inv[o0]ic[e3]", r"invoce", r"invocie", r"invoic", r"inv[o0]ice", r"inv[o0]ce",
+        r"invo1ce", r"1nvoice", r"1nv0ice", r"1nv0ic3", r"invo1c3", r"invo1c", r"invo1c3", r"INVOICE"
+    ]
+    if any(re.search(p, t) for p in fuzzy_invoice_patterns):
+        inv_score = 100
     rec_score = sum(1 for k in receipt_keywords if k in t)
+
+    # Invoice number pattern detection (e.g., INV12345, Invoice No: 12345)
+    invoice_number_patterns = [
+        r"invoice\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+",
+        r"inv\s*[a-zA-Z0-9\-]+",
+        r"po\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+"
+    ]
+    invoice_number_found = any(re.search(p, t) for p in invoice_number_patterns)
+
+    # Payment terms detection
+    payment_terms_found = bool(re.search(r"payment terms|due upon receipt|net \d+", t))
+
+    # Tax rate detection
+    tax_rate_found = bool(re.search(r"tax rate|vat|gst", t))
 
     # Detect price-like tokens (e.g., 19.99, 1,234.56, $12.50)
     price_patterns = re.findall(r"\$?\d{1,3}(?:[,\.]\d{2,3})?(?:[,\.]\d{2})?", text)
@@ -39,21 +65,46 @@ def _heuristic_classify(text: str) -> str:
     # Detect phone numbers (common on receipts)
     phone_found = 1 if re.search(r"\b\d{3}[-\s]?\d{3}[-\s]?\d{4}\b", text) else 0
 
-    # If invoice keywords present, prefer invoice strongly
-    if inv_score >= 1 and inv_score > rec_score:
+    # Invoice scoring: give extra weight to invoice number, payment terms, tax rate
+    invoice_score = inv_score * 2 + invoice_number_found * 2 + payment_terms_found * 2 + tax_rate_found * 1
+    receipt_score = rec_score * 1 + price_count * 2 + lines_with_price * 2 + phone_found * 1
+
+
+    # Fuzzy matching for 'invoice' and invoice number
+    fuzzy_invoice_patterns = [
+        r"invoice", r"inv[o0]ic[e3]", r"invoce", r"invocie", r"invoic", r"inv[o0]ice", r"inv[o0]ce",
+        r"invo1ce", r"1nvoice", r"1nv0ice", r"1nv0ic3", r"invo1c3", r"invo1c", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",r"INVOICE"
+    ]
+    fuzzy_invoice_number_patterns = [
+        r"invoice\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+",
+        r"inv\s*[a-zA-Z0-9\-]+",
+        r"po\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+"
+    ]
+    fuzzy_invoice_found = any(re.search(p, t) for p in fuzzy_invoice_patterns)
+    fuzzy_invoice_number_found = any(re.search(p, t) for p in fuzzy_invoice_number_patterns)
+
+    # Strongest override: if any form of 'invoice' is present, always classify as invoice
+    if fuzzy_invoice_found:
         return "invoice"
 
-    # Build a score for receipt-like structure
-    score = rec_score * 1 + price_count * 2 + lines_with_price * 2 + phone_found * 1
+    # Prefer invoice if invoice_score is high
+    if invoice_score >= 3 and invoice_score > receipt_score:
+        return "invoice"
 
-    # If many price-like tokens or several lines with prices, it's very likely a receipt
-    if score >= 3:
+    # Prefer receipt if receipt_score is high
+    if receipt_score >= 3 and receipt_score > invoice_score:
         return "receipt"
 
     # If nothing matches, fallback to simple keyword comparison
-    if rec_score > inv_score:
+    if receipt_score > invoice_score:
         return "receipt"
-    if inv_score > rec_score:
+    if invoice_score > receipt_score:
         return "invoice"
 
     return "unknown"
@@ -72,7 +123,7 @@ def classify_document(text: str) -> str:
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
 
 Rules:
-- Receipt: Shop/store name at top, list of items/quantities/prices, Subtotal/Tax/Total, date, payment method (cash/card/order id), 'Thank you'.
+- Receipt: If the text contains features like a business/shop name, phone number, list of items (food, products, etc.), and prices—even if noisy or misspelled—classify as receipt. Also classify as receipt if you see Subtotal/Tax/Total, date, payment method (cash/card/order id), or 'Thank you'.
 - Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
 - Unknown: If neither clearly matches.
 
