@@ -1,0 +1,16 @@
+POST http://127.0.0.1:8000/api/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="invoice_sample.jpg"
+Content-Type: image/jpeg
+
+< C:\Users\Acer\Downloads\invoices.v8i.yolov8\test\images\39_jpg.rf.c784fb12f26f2adc22bfdfe8be62c70e.jpg
+--boundary--
+
+HTTP/1.1 200  - OK
+date: Wed, 10 Sep 2025 18:46:29 GMT
+server: uvicorn
+content-length: 903
+content-type: application/json
+connection: close

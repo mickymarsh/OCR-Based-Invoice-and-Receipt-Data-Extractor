@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import InvoiceSidebar from '../../components/InvoiceSidebar';
+import ReceiptSidebar from '../../components/ReceiptSidebar';
 
 // Log extractedData to console whenever it changes
   useEffect(() => {
@@ -69,10 +71,13 @@ export default function UploadPage() {
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        console.log('dataaaaa',data);
-        setExtractedData(data[0]);  // Assuming single file for now
+        
+  setExtractedData(data[0]);  // Use first item from array
+  console.log('Extracted Data:', data[0]);
         setSidebarOpen(true);
       } else {
         alert('Upload failed');
@@ -149,55 +154,27 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Right sidebar column (animated width so it slides in from right without overlaying) */}
-        <aside
-          className={`flex flex-col bg-blue-50 rounded-lg shadow-xl transition-all duration-300 overflow-hidden ml-auto ${sidebarOpen && extractedData ? 'w-96 pointer-events-auto' : 'w-0 pointer-events-none'}`}
-          aria-hidden={!sidebarOpen || !extractedData}
-        >
-          <div className={`flex justify-between items-center p-4 border-b border-blue-200 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
-            <h2 className="text-xl font-semibold text-blue-900">{extractedData?.DocumentType ? (extractedData.DocumentType === 'receipt' ? 'Receipt' : (extractedData.DocumentType === 'invoice' ? 'Invoice' : 'Document')) : 'Extracted Data'}</h2>
-            <button onClick={closeSidebar} className="text-blue-600 hover:text-blue-800 font-bold text-lg">&times;</button>
-          </div>
-          <div className={`flex-1 p-6 overflow-y-auto min-h-0 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="grid grid-cols-1 gap-4">
-              {/* Show all extracted fields except model_label_* */}
-              {extractedData && Object.entries(extractedData)
-                .filter(([field]) => !field.startsWith("model_label_"))
-                .map(([field, value]) => (
-                  <div key={field} className="mb-4">
-                    <label className="block text-sm font-medium text-blue-700">{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
-                    {editing ? (
-                      <input type="text" value={value || ""} onChange={(e) => handleDataChange(field, e.target.value)} className="mt-1 block w-full border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-blue-100 text-blue-900 font-bold" />
-                    ) : (
-                      <p className="mt-1 text-sm text-blue-900">{value || ""}</p>
-                    )}
-                  </div>
-                ))}
-            </div>
-            {/* Model label outputs section */}
-            {extractedData && Object.entries(extractedData).some(([field]) => field.startsWith("model_label_")) && (
-              <div className="mt-8">
-                <h4 className="text-md font-bold text-blue-700 mb-2">Model Output Labels</h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.entries(extractedData)
-                    .filter(([field]) => field.startsWith("model_label_"))
-                    .map(([field, value]) => (
-                      <div key={field} className="mb-2">
-                        <label className="block text-xs font-medium text-blue-600">{field.replace("model_label_", "").replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
-                        <p className="mt-1 text-xs text-blue-900">{value || ""}</p>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-            <div className="flex justify-between mt-6">
-              <button onClick={handleEdit} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">{editing ? 'Cancel' : 'Edit'}</button>
-              {editing && (
-                <button onClick={handleSave} className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">Save Changes</button>
-              )}
-            </div>
-          </div>
-        </aside>
+        {/* Right sidebar: conditionally render InvoiceSidebar or ReceiptSidebar */}
+        {sidebarOpen && extractedData && extractedData.DocumentType === 'invoice' && (
+          <InvoiceSidebar
+            data={extractedData}
+            editing={editing}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onDataChange={handleDataChange}
+            onClose={closeSidebar}
+          />
+        )}
+        {sidebarOpen && extractedData && extractedData.DocumentType === 'receipt' && (
+          <ReceiptSidebar
+            data={extractedData}
+            editing={editing}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onDataChange={handleDataChange}
+            onClose={closeSidebar}
+          />
+        )}
       </div>
     </div>
   );
