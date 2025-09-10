@@ -1,3 +1,5 @@
 venv/
 serviceAccountKey.json
 .env.local
+
+.env*
