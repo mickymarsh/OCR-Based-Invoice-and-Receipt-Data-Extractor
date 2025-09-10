@@ -2,6 +2,7 @@
 import { auth } from "@/lib/firebase";
 import Navbar from "@/components/navbar";
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 
 const ExpenseCard = ({ title, amount, icon, color, onClick }) => {
   return (
@@ -36,6 +37,7 @@ const ExpenseRow = ({ date, name, category, amount, categoryColor }) => {
 export default function Dashboard() {
   const userName = "Maduni"; // You can replace with actual user data later
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const router = useRouter();
 
   // Sample data - replace with actual data from your backend
   const totalExpenses = 18225.00;
@@ -108,8 +110,8 @@ export default function Dashboard() {
                 <button 
                   className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-emerald-500/30 flex items-center space-x-3 group"
                   onClick={() => {
-                    // Add your navigation or modal logic here
-                    console.log('Add Receipt/Invoice clicked');
+                    // Navigate to document upload page
+                    router.push('/doc_upload');
                   }}
                 >
                   <span className="text-lg">📄</span>
