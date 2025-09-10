@@ -117,7 +117,6 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
             # Extract text
             text = extract_text_from_image(contents)
-           
 
             # Classify document (wrap in try to avoid crashing if external service fails)
             try:
