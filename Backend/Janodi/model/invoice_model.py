@@ -85,7 +85,10 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
         processor, model, reader = _init_invoice_model()
     except Exception as e:
         logger.exception("Failed to initialize invoice model: %s", e)
-        return {k: "" for k in ["Address", "Date", "Item", "OrderId", "Subtotal", "Tax", "Title", "TotalPrice"]}
+        return {k: "" for k in [
+            "customer_address", "customer_name", "due_date", "invoice_date", "invoice_number", "invoice_subtotal", "invoice_total",
+            "item_description", "item_quantity", "item_total_price", "item_unit_price", "supplier_address", "supplier_name", "tax_amount", "tax_rate"
+        ]}
 
     try:
         raw = reader.readtext(image_path)

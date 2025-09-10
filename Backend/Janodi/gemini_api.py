@@ -12,6 +12,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # NOTE: The endpoint below is a placeholder. If you have a real Gemini or LLM API endpoint,
 # replace this URL and the request payload/response parsing accordingly.
 GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://api.gemini.com/v1/classify")
+url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+
 
 
 def _heuristic_classify(text: str) -> str:
@@ -58,46 +60,38 @@ def _heuristic_classify(text: str) -> str:
 
 
 def classify_document(text: str) -> str:
-    """Attempt to classify using external Gemini API, falling back to a local heuristic on error.
-
-    Returns: 'receipt', 'invoice', or 'unknown'
-    """
+    """Classify document using Gemini API, fallback to heuristic."""
     if not GEMINI_API_KEY:
         logger.warning("GEMINI_API_KEY is not set, using local heuristic classifier")
         return _heuristic_classify(text)
 
     payload = {
-        "prompt": f"""
+        "contents": [{
+            "parts": [{
+                "text": f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
 
 Rules:
 - Receipt: Shop/store name at top, list of items/quantities/prices, Subtotal/Tax/Total, date, payment method (cash/card/order id), 'Thank you'.
-- Invoice: If the text starts with 'INVOICE' or contains 'BILL TO', 'TAX', 'TOTAL', 'DATE', 'AMOUNT DUE', 'DUE UPON RECEIPT', treat as invoice even if other words are noisy, misspelled, or missing. Also treat as invoice if you see issuer/seller name, receiver/bill-to name, or invoice number. Payment terms and tax rate are strong invoice signals. If these features are present, return 'invoice'.
-- Unknown: If neither clearly matches, or ambiguous, return 'unknown'.
+- Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
+- Unknown: If neither clearly matches.
 
-Return only a single word: receipt OR invoice OR unknown (no punctuation, no explanation).
+Return only one word: receipt OR invoice OR unknown.
 
-Examples (input -> expected):
-- "SuperMart\n1x Apple  $1.00\nSubtotal $1.00\nTax $0.05\nTotal $1.05\n2025-01-10" -> receipt
-- "INVOICE\nInvoice #1234\nBill To: Acme Co.\nAmount Due: $350.00" -> invoice
-- "[Company Name] INVOICE stcet Addters] Icay: Fnen [C00] Bod 0od0 Wenenn DATE Zok 421/ 2014 bILLTO CUSTOHEE Weace DuR Upon KettipE [Cralerent] Esurel Aadtftt] [Cn_ [ehone Addrt Drcmirnon HaeWE See L0bDI Ennn( cheut drkcvec 150J0 SudtOI 575-00 TAX RATE 4-2503 22.31 TOTAL 547.31 Icdem4Ye 4ete ueahonit Wolde @al CC #tot [Na7Fhens ? meaeteade" -> invoice
-- "INVOICE\nBILL TO: John Doe\nDATE: 2023-05-01\nTAX: 10.00\nTOTAL: 100.00" -> invoice
-- "INVOICE\nBILL TO: Jane Smith\nDUE UPON RECEIPT\nTAX RATE: 5%\nTOTAL: 250.00" -> invoice
-
-Now classify the following document text (do not add any extra text):\n\n"{text}"
-""",
-        "max_tokens": 8,
+Text:
+{text}
+"""
+            }]
+        }]
     }
-    headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
-        "Content-Type": "application/json",
-    }
+
+    headers = {"Content-Type": "application/json"}
 
     try:
-        resp = requests.post(GEMINI_API_URL, json=payload, headers=headers, timeout=10)
+        resp = requests.post(url, json=payload, headers=headers, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        logger.error("Gemini API call failed (%s). Falling back to heuristic. URL=%s", exc, GEMINI_API_URL)
+        logger.error("Gemini API call failed (%s). Falling back to heuristic. URL=%s", exc, url)
         return _heuristic_classify(text)
 
     try:
@@ -106,31 +100,18 @@ Now classify the following document text (do not add any extra text):\n\n"{text}
         logger.error("Gemini API returned non-json response. Falling back to heuristic.")
         return _heuristic_classify(text)
 
-    # Best-effort parsing for common response shapes. Adjust to your API's schema.
-    # Example shapes handled: {"label":"receipt"}, {"type":"invoice"}, {"choices":[{"text":"receipt"}]}
-    if isinstance(data, dict):
-        if "label" in data:
-            return data.get("label")
-        if "type" in data:
-            return data.get("type")
-        # OpenAI-like choices
-        choices = data.get("choices") or data.get("outputs")
-        if isinstance(choices, list) and len(choices) > 0:
-            first = choices[0]
-            # try known keys
-            for key in ("text", "label", "content", "output"):
-                if isinstance(first, dict) and key in first:
-                    txt = first.get(key, "").lower()
-                    if "receipt" in txt:
-                        return "receipt"
-                    if "invoice" in txt:
-                        return "invoice"
-            # if the choice is a string
-            if isinstance(first, str):
-                if "receipt" in first.lower():
-                    return "receipt"
-                if "invoice" in first.lower():
-                    return "invoice"
+    # Parse Gemini response
+    try:
+        candidates = data.get("candidates", [])
+        if candidates:
+            txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
+            if "receipt" in txt:
+                return "receipt"
+            if "invoice" in txt:
+                return "invoice"
+            if "unknown" in txt:
+                return "unknown"
+    except Exception:
+        pass
 
-    # As a last resort use the heuristic
     return _heuristic_classify(text)

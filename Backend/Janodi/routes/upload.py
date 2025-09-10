@@ -52,14 +52,21 @@ def extract_text_from_image(image_bytes: bytes) -> str:
 def parse_extracted_data_invoice(text: str) -> dict:
     # Simple invoice parsing fallback
     data = {
-        "Address": "",
-        "Date": "",
-        "Item": "",
-        "OrderId": "",
-        "Subtotal": "",
-        "Tax": "",
-        "Title": "",
-        "TotalPrice": ""
+        "customer_address": "",
+        "customer_name": "",
+        "due_date": "",
+        "invoice_date": "",
+        "invoice_number": "",
+        "invoice_subtotal": "",
+        "invoice_total": "",
+        "item_description": "",
+        "item_quantity": "",
+        "item_total_price": "",
+        "item_unit_price": "",
+        "supplier_address": "",
+        "supplier_name": "",
+        "tax_amount": "",
+        "tax_rate": ""
     }
     lines = text.split('\n') if '\n' in text else text.split(' ')
     if lines:
