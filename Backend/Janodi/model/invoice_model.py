@@ -166,10 +166,7 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
             if mapped:
                 final[mapped] = " ".join(words_list)
 
-        # Print all model output labels and their values for debugging and frontend display
-        print("Model output labels and values:")
-        for label, words_list in raw_struct.items():
-            print(f"{label}: {' '.join(words_list)}")
+       
         # Optionally, add these to the result for frontend display
         model_labels = {f"model_label_{label}": ' '.join(words_list) for label, words_list in raw_struct.items()}
 

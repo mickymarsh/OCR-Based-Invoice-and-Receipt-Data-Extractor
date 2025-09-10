@@ -23,16 +23,7 @@ reader = easyocr.Reader(['en'])
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# class ExtractedData(BaseModel):
-#     Address: str = ""
-#     Date: str = ""
-#     Item: str = ""
-#     OrderId: str = ""
-#     Subtotal: str = ""
-#     Tax: str = ""
-#     Title: str = ""
-#     TotalPrice: str = ""
-#     DocumentType: str = ""
+
 
 def extract_text_from_image(image_bytes: bytes) -> str:
     # Convert bytes to numpy array
@@ -126,7 +117,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
             # Extract text
             text = extract_text_from_image(contents)
-            print(text)  # Debug print to verify extracted text
+           
 
             # Classify document (wrap in try to avoid crashing if external service fails)
             try:
@@ -153,7 +144,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
                     if isinstance(structured, dict) and any(v for v in structured.values()):
                         # Normalize lists to strings if needed
                         parsed_data = {k: ' '.join(v) if isinstance(v, list) else v for k, v in structured.items()}
-                        print(parsed_data)  # Debug print to verify structured data
+                        
                         logger.info("Invoice model produced structured data for %s", file.filename)
                     else:
                         logger.info("Invoice model returned empty result for %s, using regex fallback", file.filename)
@@ -173,7 +164,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 parsed_data = {"Address": "Unknown", "Date": "", "Item": "", "OrderId": "", "Subtotal": "", "Tax": "", "Title": "", "TotalPrice": "", "DocumentType": "unknown"}
 
             results.append(parsed_data)
-            print('hiiiiiiiii',results)  # Debug print to verify results
+           
         except HTTPException:
             # re-raise FastAPI HTTPExceptions unchanged
             raise

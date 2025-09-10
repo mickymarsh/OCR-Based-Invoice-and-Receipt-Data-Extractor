@@ -13,17 +13,7 @@ export default function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Log extractedData to console whenever it changes
-  useEffect(() => {
-    if (extractedData) {
-      console.log('Extracted Data:', extractedData);
-      // Print all keys and values for debugging
-      Object.entries(extractedData).forEach(([key, value]) => {
-        console.log(`Field: ${key}, Value: ${value}`);
-      });
-    }
-  }, [extractedData]);
-
+  
   useEffect(() => {
     if (files && files.length > 0) {
       const url = URL.createObjectURL(files[0]);
@@ -72,13 +62,12 @@ export default function UploadPage() {
         body: formData,
       });
 
-      console.log('Response status:', response.status);
-
+      
       if (response.ok) {
         const data = await response.json();
         
   setExtractedData(data[0]);  // Use first item from array
-  console.log('Extracted Data:', data[0]);
+  
         setSidebarOpen(true);
       } else {
         alert('Upload failed');
