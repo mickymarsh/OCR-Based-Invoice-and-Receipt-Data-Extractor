@@ -1,5 +1,5 @@
 venv/
 serviceAccountKey.json
 .env.local
-
+__pycache__
 .env*
