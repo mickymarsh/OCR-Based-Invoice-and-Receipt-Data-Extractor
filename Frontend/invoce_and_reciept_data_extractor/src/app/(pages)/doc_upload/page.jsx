@@ -4,7 +4,16 @@ import { useState, useEffect } from 'react';
 import InvoiceSidebar from '../../components/InvoiceSidebar';
 import ReceiptSidebar from '../../components/ReceiptSidebar';
 
-// Log extractedData to console whenever it changes
+export default function UploadPage() {
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [extractedData, setExtractedData] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  // Log extractedData to console whenever it changes
   useEffect(() => {
     if (extractedData) {
       console.log('Extracted Data:', extractedData);
@@ -14,15 +23,6 @@ import ReceiptSidebar from '../../components/ReceiptSidebar';
       });
     }
   }, [extractedData]);
-
-export default function UploadPage() {
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [extractedData, setExtractedData] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     if (files && files.length > 0) {
@@ -59,6 +59,7 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
+    console.log('Uploading files:', files);
     if (files.length === 0) return;
 
     setUploading(true);
