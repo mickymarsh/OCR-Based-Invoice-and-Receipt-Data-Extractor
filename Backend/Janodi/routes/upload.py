@@ -7,6 +7,7 @@ import re
 from pydantic import BaseModel
 from ..gemini_api import classify_document
 from ..model.receipts_model import extract_receipt_structured_data
+from ..model.invoice_model import extract_invoice_structured_data
 import logging
 import tempfile
 import os
@@ -22,16 +23,7 @@ reader = easyocr.Reader(['en'])
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-class ExtractedData(BaseModel):
-    Address: str = ""
-    Date: str = ""
-    Item: str = ""
-    OrderId: str = ""
-    Subtotal: str = ""
-    Tax: str = ""
-    Title: str = ""
-    TotalPrice: str = ""
-    DocumentType: str = ""
+
 
 def extract_text_from_image(image_bytes: bytes) -> str:
     # Convert bytes to numpy array
@@ -48,52 +40,50 @@ def extract_text_from_image(image_bytes: bytes) -> str:
     return text
 
 
-
 def parse_extracted_data_invoice(text: str) -> dict:
-    # Invoice parsing logic (can be customized)
+    # Simple invoice parsing fallback
     data = {
-        "Address": "",
-        "Date": "",
-        "Item": "",
-        "OrderId": "",
-        "Subtotal": "",
-        "Tax": "",
-        "Title": "",
-        "TotalPrice": ""
+        "customer_address": "",
+        "customer_name": "",
+        "due_date": "",
+        "invoice_date": "",
+        "invoice_number": "",
+        "invoice_subtotal": "",
+        "invoice_total": "",
+        "item_description": "",
+        "item_quantity": "",
+        "item_total_price": "",
+        "item_unit_price": "",
+        "supplier_address": "",
+        "supplier_name": "",
+        "tax_amount": "",
+        "tax_rate": ""
     }
-    lines = text.split('\n')
+    lines = text.split('\n') if '\n' in text else text.split(' ')
     if lines:
-        data["Address"] = lines[0].strip()
+        data["Title"] = lines[0].strip()
     date_pattern = r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b'
     date_match = re.search(date_pattern, text)
     if date_match:
         data["Date"] = date_match.group(1)
-    item_line = next((l for l in lines if 'item' in l.lower()), "")
-    data["Item"] = item_line
-    orderid_pattern = r'(Order\s*ID[:\s]*)(\w+)'
+    orderid_pattern = r'(Invoice\s*(?:#|No\.?|Number)?[:\s]*)(\w[\w-]*)'
     orderid_match = re.search(orderid_pattern, text, re.IGNORECASE)
     if orderid_match:
         data["OrderId"] = orderid_match.group(2)
-    subtotal_pattern = r'(Subtotal[:\s]*)(\$?\d+\.?\d*)'
-    subtotal_match = re.search(subtotal_pattern, text, re.IGNORECASE)
+    subtotal_match = re.search(r'Subtotal[:\s]*\$?([0-9,]+\.?[0-9]*)', text, re.IGNORECASE)
     if subtotal_match:
-        data["Subtotal"] = subtotal_match.group(2)
-    tax_pattern = r'(Tax[:\s]*)(\$?\d+\.?\d*)'
-    tax_match = re.search(tax_pattern, text, re.IGNORECASE)
+        data["Subtotal"] = subtotal_match.group(1)
+    tax_match = re.search(r'Tax[:\s]*\$?([0-9,]+\.?[0-9]*)', text, re.IGNORECASE)
     if tax_match:
-        data["Tax"] = tax_match.group(2)
-    if len(lines) > 1:
-        data["Title"] = lines[1].strip()
-    title_line = next((l for l in lines if 'title' in l.lower()), "")
-    if title_line:
-        data["Title"] = title_line
-    total_pattern = r'(Total(?:\s*Price)?[:\s]*)(\$?\d+\.?\d*)'
-    total_match = re.search(total_pattern, text, re.IGNORECASE)
+        data["Tax"] = tax_match.group(1)
+    total_match = re.search(r'(Total(?:\s*Due|\s*Amount)?[:\s]*\$?)([0-9,]+\.?[0-9]*)', text, re.IGNORECASE)
     if total_match:
         data["TotalPrice"] = total_match.group(2)
     return data
 
-@router.post("/upload", response_model=List[ExtractedData])
+
+
+@router.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     results = []
     for file in files:
@@ -127,14 +117,14 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
             # Extract text
             text = extract_text_from_image(contents)
-            
 
             # Classify document (wrap in try to avoid crashing if external service fails)
             try:
                 doc_type = classify_document(text)
+                logger.info("Classified document %s as %s", file.filename, doc_type)
             except Exception as e:
-                logger.exception("Document classification failed, defaulting to 'receipt'")
-                doc_type = "receipt"
+                logger.exception("Document classification failed, defaulting to 'invoice'")
+                doc_type = "invoice"  # Changed default to invoice for testing
 
             if doc_type == "receipt":
                 logger.info("Receipt detected for file %s", file.filename)
@@ -147,13 +137,33 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 parsed_data["DocumentType"] = "receipt"
             elif doc_type == "invoice":
                 logger.info("Invoice detected for file %s", file.filename)
-                parsed_data = parse_extracted_data_invoice(text)
+                # Try model-based invoice extraction first; fallback to regex parser
+                try:
+                    structured = extract_invoice_structured_data(temp_path)
+                    if isinstance(structured, dict) and any(v for v in structured.values()):
+                        # Normalize lists to strings if needed
+                        parsed_data = {k: ' '.join(v) if isinstance(v, list) else v for k, v in structured.items()}
+                        
+                        logger.info("Invoice model produced structured data for %s", file.filename)
+                    else:
+                        logger.info("Invoice model returned empty result for %s, using regex fallback", file.filename)
+                        parsed_data = parse_extracted_data_invoice(text)
+                except Exception as exc:
+                    # Log more helpful message for gated/auth errors
+                    tb = traceback.format_exc()
+                    logger.error("Invoice model error for %s: %s\n%s", file.filename, str(exc), tb)
+                    if 'gated' in str(exc).lower() or '401' in str(exc) or 'access' in str(exc).lower():
+                        logger.error("Invoice model appears to be gated or requires HF authentication. Set HUGGINGFACE_HUB_TOKEN env var with a token that has access.")
+                    parsed_data = parse_extracted_data_invoice(text)
+
+                # Ensure DocumentType is present
                 parsed_data["DocumentType"] = "invoice"
             else:
                 logger.info("Unknown doc type for file %s: %s", file.filename, doc_type)
                 parsed_data = {"Address": "Unknown", "Date": "", "Item": "", "OrderId": "", "Subtotal": "", "Tax": "", "Title": "", "TotalPrice": "", "DocumentType": "unknown"}
 
-            results.append(ExtractedData(**parsed_data))
+            results.append(parsed_data)
+           
         except HTTPException:
             # re-raise FastAPI HTTPExceptions unchanged
             raise

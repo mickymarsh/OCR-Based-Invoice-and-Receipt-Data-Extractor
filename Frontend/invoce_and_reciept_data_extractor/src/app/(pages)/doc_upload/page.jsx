@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import InvoiceSidebar from '../../components/InvoiceSidebar';
+import ReceiptSidebar from '../../components/ReceiptSidebar';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -11,6 +13,7 @@ export default function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  
   useEffect(() => {
     if (files && files.length > 0) {
       const url = URL.createObjectURL(files[0]);
@@ -46,6 +49,7 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
+    console.log('Uploading files:', files);
     if (files.length === 0) return;
 
     setUploading(true);
@@ -58,9 +62,12 @@ export default function UploadPage() {
         body: formData,
       });
 
+      
       if (response.ok) {
         const data = await response.json();
-        setExtractedData(data[0]);  // Assuming single file for now
+        
+  setExtractedData(data[0]);  // Use first item from array
+  
         setSidebarOpen(true);
       } else {
         alert('Upload failed');
@@ -137,36 +144,27 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Right sidebar column (animated width so it slides in from right without overlaying) */}
-        <aside
-          className={`flex flex-col bg-blue-50 rounded-lg shadow-xl transition-all duration-300 overflow-hidden ml-auto ${sidebarOpen && extractedData ? 'w-96 pointer-events-auto' : 'w-0 pointer-events-none'}`}
-          aria-hidden={!sidebarOpen || !extractedData}
-        >
-          <div className={`flex justify-between items-center p-4 border-b border-blue-200 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
-            <h2 className="text-xl font-semibold text-blue-900">{extractedData?.DocumentType ? (extractedData.DocumentType === 'receipt' ? 'Receipt' : (extractedData.DocumentType === 'invoice' ? 'Invoice' : 'Document')) : 'Extracted Data'}</h2>
-            <button onClick={closeSidebar} className="text-blue-600 hover:text-blue-800 font-bold text-lg">&times;</button>
-          </div>
-          <div className={`flex-1 p-6 overflow-y-auto min-h-0 ${sidebarOpen && extractedData ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="grid grid-cols-1 gap-4">
-              {["Address","Date","Item","OrderId","Subtotal","Tax","Title","TotalPrice"].map((field) => (
-                <div key={field} className="mb-4">
-                  <label className="block text-sm font-medium text-blue-700 capitalize">{field}</label>
-                  {editing ? (
-                    <input type="text" value={extractedData?.[field] || ""} onChange={(e) => handleDataChange(field, e.target.value)} className="mt-1 block w-full border-blue-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-blue-100 text-blue-900 font-bold" />
-                  ) : (
-                    <p className="mt-1 text-sm text-blue-900">{extractedData?.[field] || ""}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-6">
-              <button onClick={handleEdit} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">{editing ? 'Cancel' : 'Edit'}</button>
-              {editing && (
-                <button onClick={handleSave} className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">Save Changes</button>
-              )}
-            </div>
-          </div>
-        </aside>
+        {/* Right sidebar: conditionally render InvoiceSidebar or ReceiptSidebar */}
+        {sidebarOpen && extractedData && extractedData.DocumentType === 'invoice' && (
+          <InvoiceSidebar
+            data={extractedData}
+            editing={editing}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onDataChange={handleDataChange}
+            onClose={closeSidebar}
+          />
+        )}
+        {sidebarOpen && extractedData && extractedData.DocumentType === 'receipt' && (
+          <ReceiptSidebar
+            data={extractedData}
+            editing={editing}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onDataChange={handleDataChange}
+            onClose={closeSidebar}
+          />
+        )}
       </div>
     </div>
   );

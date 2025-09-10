@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 import os
 import logging
@@ -10,19 +12,47 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # NOTE: The endpoint below is a placeholder. If you have a real Gemini or LLM API endpoint,
 # replace this URL and the request payload/response parsing accordingly.
 GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://api.gemini.com/v1/classify")
+url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+
 
 
 def _heuristic_classify(text: str) -> str:
     """Lightweight keyword-based fallback classifier."""
     t = text.lower()
 
-    # Strong invoice indicators
-    invoice_keywords = ["invoice", "bill to", "invoice #", "invoice number", "amount due", "due date", "bill to:"]
+
+    # Expanded invoice indicators
+    invoice_keywords = [
+        "invoice", "bill to", "invoice #", "invoice number", "amount due", "due date", "bill to:",
+        "payment terms", "tax rate", "due upon receipt", "purchase order", "po number", "remit to",
+        "terms", "reference", "account number", "supplier", "customer", "net", "vat", "gst", "total due"
+    ]
     # Receipt indicators
-    receipt_keywords = ["subtotal", "receipt", "order id", "total", "cash", "card", "tax", "thank you", "qty"]
+    receipt_keywords = ["subtotal", "receipt", "order id", "total", "cash", "card", "tax", "thank you", "qty", "change", "item", "store", "shop", "payment method"]
 
     inv_score = sum(1 for k in invoice_keywords if k in t)
+    # If 'invoice' or fuzzy match is found, give full marks
+    fuzzy_invoice_patterns = [
+        r"invoice", r"inv[o0]ic[e3]", r"invoce", r"invocie", r"invoic", r"inv[o0]ice", r"inv[o0]ce",
+        r"invo1ce", r"1nvoice", r"1nv0ice", r"1nv0ic3", r"invo1c3", r"invo1c", r"invo1c3", r"INVOICE"
+    ]
+    if any(re.search(p, t) for p in fuzzy_invoice_patterns):
+        inv_score = 100
     rec_score = sum(1 for k in receipt_keywords if k in t)
+
+    # Invoice number pattern detection (e.g., INV12345, Invoice No: 12345)
+    invoice_number_patterns = [
+        r"invoice\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+",
+        r"inv\s*[a-zA-Z0-9\-]+",
+        r"po\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+"
+    ]
+    invoice_number_found = any(re.search(p, t) for p in invoice_number_patterns)
+
+    # Payment terms detection
+    payment_terms_found = bool(re.search(r"payment terms|due upon receipt|net \d+", t))
+
+    # Tax rate detection
+    tax_rate_found = bool(re.search(r"tax rate|vat|gst", t))
 
     # Detect price-like tokens (e.g., 19.99, 1,234.56, $12.50)
     price_patterns = re.findall(r"\$?\d{1,3}(?:[,\.]\d{2,3})?(?:[,\.]\d{2})?", text)
@@ -35,69 +65,84 @@ def _heuristic_classify(text: str) -> str:
     # Detect phone numbers (common on receipts)
     phone_found = 1 if re.search(r"\b\d{3}[-\s]?\d{3}[-\s]?\d{4}\b", text) else 0
 
-    # If invoice keywords present, prefer invoice strongly
-    if inv_score >= 1 and inv_score > rec_score:
+    # Invoice scoring: give extra weight to invoice number, payment terms, tax rate
+    invoice_score = inv_score * 2 + invoice_number_found * 2 + payment_terms_found * 2 + tax_rate_found * 1
+    receipt_score = rec_score * 1 + price_count * 2 + lines_with_price * 2 + phone_found * 1
+
+
+    # Fuzzy matching for 'invoice' and invoice number
+    fuzzy_invoice_patterns = [
+        r"invoice", r"inv[o0]ic[e3]", r"invoce", r"invocie", r"invoic", r"inv[o0]ice", r"inv[o0]ce",
+        r"invo1ce", r"1nvoice", r"1nv0ice", r"1nv0ic3", r"invo1c3", r"invo1c", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",
+        r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3", r"invo1c3",r"INVOICE"
+    ]
+    fuzzy_invoice_number_patterns = [
+        r"invoice\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+",
+        r"inv\s*[a-zA-Z0-9\-]+",
+        r"po\s*(no\.?|number|#)?[:\s]*[a-zA-Z0-9\-]+"
+    ]
+    fuzzy_invoice_found = any(re.search(p, t) for p in fuzzy_invoice_patterns)
+    fuzzy_invoice_number_found = any(re.search(p, t) for p in fuzzy_invoice_number_patterns)
+
+    # Strongest override: if any form of 'invoice' is present, always classify as invoice
+    if fuzzy_invoice_found:
         return "invoice"
 
-    # Build a score for receipt-like structure
-    score = rec_score * 1 + price_count * 2 + lines_with_price * 2 + phone_found * 1
+    # Prefer invoice if invoice_score is high
+    if invoice_score >= 3 and invoice_score > receipt_score:
+        return "invoice"
 
-    # If many price-like tokens or several lines with prices, it's very likely a receipt
-    if score >= 3:
+    # Prefer receipt if receipt_score is high
+    if receipt_score >= 3 and receipt_score > invoice_score:
         return "receipt"
 
     # If nothing matches, fallback to simple keyword comparison
-    if rec_score > inv_score:
+    if receipt_score > invoice_score:
         return "receipt"
-    if inv_score > rec_score:
+    if invoice_score > receipt_score:
         return "invoice"
 
     return "unknown"
 
 
 def classify_document(text: str) -> str:
-    """Attempt to classify using external Gemini API, falling back to a local heuristic on error.
-
-    Returns: 'receipt', 'invoice', or 'unknown'
-    """
+    """Classify document using Gemini API, fallback to heuristic."""
     if not GEMINI_API_KEY:
         logger.warning("GEMINI_API_KEY is not set, using local heuristic classifier")
         return _heuristic_classify(text)
 
     payload = {
-        # This payload will likely need to be adapted to the real API you use.
-        # The prompt below instructs the model to return exactly one of: receipt, invoice, or unknown.
-        # It includes clear heuristics and short examples so receipts (shop name, list of items, subtotal/total, date)
-        # are separated from invoices (the word "invoice", invoice number, issuer name, receiver/bill-to, paid/amount due).
-        "prompt": f"""
+        "contents": [{
+            "parts": [{
+                "text": f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
 
-Rules (use these to decide):
-- Receipt: typically shows a shop/store name at the top, a list of purchased items or quantities, prices, a Subtotal/Tax/Total or 'Total' line, and a date; may include 'Thank you' or payment method (cash/card/order id). If these features are present, return 'receipt'.
-- Invoice: explicitly uses the word 'invoice' or 'invoice number' (or 'Invoice #'), shows issuer/seller name and receiver/bill-to name, and payment-related terms like 'amount due', 'paid', 'due date', or payment instructions; if these features are present, return 'invoice'.
-- Unknown: if neither clearly matches, or if ambiguous, return 'unknown'.
+Rules:
+- Receipt: If the text contains features like a business/shop name, phone number, list of items (food, products, etc.), and prices—even if noisy or misspelled—classify as receipt. Also classify as receipt if you see Subtotal/Tax/Total, date, payment method (cash/card/order id), or 'Thank you'.
+- Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
+- Unknown: If neither clearly matches.
 
-Return requirements:
-- Respond with a single word only: receipt OR invoice OR unknown (no punctuation, no explanation).
+Return only one word: receipt OR invoice OR unknown.
 
-Examples (input -> expected):
-- "SuperMart\n1x Apple  $1.00\nSubtotal $1.00\nTax $0.05\nTotal $1.05\n2025-01-10" -> receipt
-- "INVOICE\nInvoice #1234\nBill To: Acme Co.\nAmount Due: $350.00" -> invoice
-
-Now classify the following document text (do not add any extra text):\n\n"{text}"
-""",
-        "max_tokens": 8,
+Text:
+{text}
+"""
+            }]
+        }]
     }
-    headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
-        "Content-Type": "application/json",
-    }
+
+    headers = {"Content-Type": "application/json"}
 
     try:
-        resp = requests.post(GEMINI_API_URL, json=payload, headers=headers, timeout=10)
+        resp = requests.post(url, json=payload, headers=headers, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        logger.error("Gemini API call failed (%s). Falling back to heuristic. URL=%s", exc, GEMINI_API_URL)
+        logger.error("Gemini API call failed (%s). Falling back to heuristic. URL=%s", exc, url)
         return _heuristic_classify(text)
 
     try:
@@ -106,31 +151,18 @@ Now classify the following document text (do not add any extra text):\n\n"{text}
         logger.error("Gemini API returned non-json response. Falling back to heuristic.")
         return _heuristic_classify(text)
 
-    # Best-effort parsing for common response shapes. Adjust to your API's schema.
-    # Example shapes handled: {"label":"receipt"}, {"type":"invoice"}, {"choices":[{"text":"receipt"}]}
-    if isinstance(data, dict):
-        if "label" in data:
-            return data.get("label")
-        if "type" in data:
-            return data.get("type")
-        # OpenAI-like choices
-        choices = data.get("choices") or data.get("outputs")
-        if isinstance(choices, list) and len(choices) > 0:
-            first = choices[0]
-            # try known keys
-            for key in ("text", "label", "content", "output"):
-                if isinstance(first, dict) and key in first:
-                    txt = first.get(key, "").lower()
-                    if "receipt" in txt:
-                        return "receipt"
-                    if "invoice" in txt:
-                        return "invoice"
-            # if the choice is a string
-            if isinstance(first, str):
-                if "receipt" in first.lower():
-                    return "receipt"
-                if "invoice" in first.lower():
-                    return "invoice"
+    # Parse Gemini response
+    try:
+        candidates = data.get("candidates", [])
+        if candidates:
+            txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
+            if "receipt" in txt:
+                return "receipt"
+            if "invoice" in txt:
+                return "invoice"
+            if "unknown" in txt:
+                return "unknown"
+    except Exception:
+        pass
 
-    # As a last resort use the heuristic
     return _heuristic_classify(text)
