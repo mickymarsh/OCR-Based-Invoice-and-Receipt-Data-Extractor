@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 const Navbar = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMobile, setShowMobile] = useState(false);
+  const menuRef = useRef(null);
 
   const handleLogout = async () => {
     try {
@@ -17,66 +19,165 @@ const Navbar = () => {
     }
   };
 
+  // Close dropdown on outside click / ESC
+  useEffect(() => {
+    const onClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setShowDropdown(false);
+        setShowMobile(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   return (
-    <nav className="bg-gray-900 px-6 py-3 border-b border-gray-700">
-      <div className="flex justify-between items-center w-full">
-        {/* Left side - Dashboard pushed to left corner */}
-        <div className="text-xl font-semibold text-white">Dashboard</div>
-
-        {/* Right side - Navigation Links pushed to right corner */}
-        <div className="flex items-center gap-6">
-          <Link 
-            href="/login" 
-            className="text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
+    <nav className="sticky top-0 z-30 bg-gray-900 border-b border-gray-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="h-16 flex items-center justify-between">
+          {/* Left: Brand */}
+          <Link
+            href="/"
+            className="flex items-center gap-3 text-white font-semibold tracking-tight"
           >
-            Login
-          </Link>
-          <Link 
-            href="/register" 
-            className="text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
-          >
-            Register
+            <span className="inline-flex h-8 w-8 rounded-xl bg-gray-800 border border-gray-700" />
+            <span className="text-lg">Dashboard</span>
           </Link>
 
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-all duration-200 border border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-500"
+          {/* Right: Desktop actions */}
+          <div className="hidden md:flex items-center gap-2">
+            <Link
+              href="/login"
+              className="px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 font-medium text-sm"
             >
-              <span className="text-lg">👤</span>
-            </button>
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 font-medium text-sm"
+            >
+              Register
+            </Link>
 
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 py-1">
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                  onClick={() => setShowDropdown(false)}
+            {/* Profile */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowDropdown((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={showDropdown}
+                className="ml-1 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border border-gray-600 hover:bg-gray-700 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+              >
+                <span className="text-lg">👤</span>
+              </button>
+
+              {showDropdown && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50 py-1 transition ease-out duration-150"
                 >
-                  Your Profile
-                </Link>
-                <Link
-                  href="/history"
-                  className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                  onClick={() => setShowDropdown(false)}
-                >
-                  Your History
-                </Link>
-                <button 
-                  onClick={() => {
-                    handleLogout();
-                    setShowDropdown(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg"
+                    onClick={() => setShowDropdown(false)}
+                    role="menuitem"
+                  >
+                    Your Profile
+                  </Link>
+                  <Link
+                    href="/history"
+                    className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg"
+                    onClick={() => setShowDropdown(false)}
+                    role="menuitem"
+                  >
+                    Your History
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowDropdown(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg"
+                    role="menuitem"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile: Hamburger */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setShowMobile((v) => !v)}
+              aria-label="Toggle menu"
+              aria-expanded={showMobile}
+              className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gray-800 border border-gray-700 hover:bg-gray-700 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+            >
+              <svg className="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+                <path strokeWidth="2" strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile sheet */}
+      {showMobile && (
+        <div className="md:hidden border-t border-gray-700 bg-gray-900">
+          <div className="px-4 py-3 space-y-2">
+            <Link
+              href="/login"
+              className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800 font-medium"
+              onClick={() => setShowMobile(false)}
+            >
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800 font-medium"
+              onClick={() => setShowMobile(false)}
+            >
+              Register
+            </Link>
+
+            <div className="h-px bg-gray-700" />
+
+            <Link
+              href="/profile"
+              className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800"
+              onClick={() => setShowMobile(false)}
+            >
+              Your Profile
+            </Link>
+            <Link
+              href="/history"
+              className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800"
+              onClick={() => setShowMobile(false)}
+            >
+              Your History
+            </Link>
+            <button
+              onClick={() => {
+                handleLogout();
+                setShowMobile(false);
+              }}
+              className="w-full text-left px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-800"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
