@@ -3,8 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { sendPasswordResetEmail, updateProfile } from "firebase/auth";
-import { FaUser, FaCalendarAlt, FaHistory, FaEnvelope, FaKey, FaMoneyBill, FaHome, FaUsers, FaVenusMars, FaRing, FaBriefcase } from "react-icons/fa";
+import { sendPasswordResetEmail } from "firebase/auth";
+import Navbar from '../../components/navbar';
+
+import {
+  FaUser,
+  FaCalendarAlt,
+  FaHistory,
+  FaEnvelope,
+  FaKey,
+  FaMoneyBill,
+} from "react-icons/fa";
 
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
@@ -19,106 +28,71 @@ export default function UserProfile() {
   useEffect(() => {
     const fetchUserData = async () => {
       const user = auth.currentUser;
-
       if (user) {
         const uid = user.uid;
         const docRef = doc(db, "User", uid);
-
         try {
           const docSnap = await getDoc(docRef);
-
           if (docSnap.exists()) {
             const data = docSnap.data();
             setUserData(data);
             setEditableData(data);
-            
-            // Get sign-in history (last 5 sign-ins)
             if (user.metadata && user.metadata.lastSignInTime) {
               const history = [
                 { timestamp: new Date(user.metadata.lastSignInTime), provider: "Email" },
-                { timestamp: new Date(user.metadata.creationTime), provider: "Email" }
+                { timestamp: new Date(user.metadata.creationTime), provider: "Email" },
               ];
               setSignInHistory(history);
             }
-          } else {
-            console.warn("No such document for UID:", uid);
           }
         } catch (err) {
           console.error("Firestore fetch error:", err);
         }
-      } else {
-        console.warn("No user is logged in");
       }
     };
-
     fetchUserData();
   }, []);
 
   const handleEditToggle = () => {
-    if (isEditing) {
-      setEditableData(userData);
-    }
+    if (isEditing) setEditableData(userData);
     setIsEditing(!isEditing);
     setSaveStatus({ message: "", type: "" });
   };
 
   const handleInputChange = (field, value) => {
-    setEditableData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditableData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
     const user = auth.currentUser;
     if (!user) return;
-
     try {
       const userRef = doc(db, "User", user.uid);
       await updateDoc(userRef, editableData);
-      
       setUserData(editableData);
       setIsEditing(false);
       setSaveStatus({ message: "Profile updated successfully!", type: "success" });
-      
-      setTimeout(() => {
-        setSaveStatus({ message: "", type: "" });
-      }, 3000);
+      setTimeout(() => setSaveStatus({ message: "", type: "" }), 3000);
     } catch (error) {
-      console.error("Error updating document:", error);
-      setSaveStatus({ message: "Failed to update profile. Please try again.", type: "error" });
+      setSaveStatus({ message: "Failed to update profile.", type: "error" });
     }
   };
 
   const handlePasswordReset = async () => {
     const user = auth.currentUser;
-    
     if (!user || !user.email) {
-      setResetStatus({ 
-        message: "No user is logged in or user doesn't have an email", 
-        type: "error" 
-      });
+      setResetStatus({ message: "No user email found", type: "error" });
       return;
     }
-
     try {
       await sendPasswordResetEmail(auth, user.email);
-      setResetStatus({ 
-        message: "Password reset email sent! Check your inbox.", 
-        type: "success" 
-      });
+      setResetStatus({ message: "Password reset email sent!", type: "success" });
     } catch (error) {
-      console.error("Error sending password reset email:", error);
-      setResetStatus({ 
-        message: `Failed to send reset email: ${error.message}`, 
-        type: "error" 
-      });
+      setResetStatus({ message: `Failed: ${error.message}`, type: "error" });
     }
   };
 
   const handleImageUpload = async (e) => {
-    // This would typically upload to Firebase Storage
-    // For simplicity, we're just setting a local state
     const file = e.target.files[0];
     if (file) {
       setIsUploading(true);
@@ -132,64 +106,74 @@ export default function UserProfile() {
   };
 
   const renderField = (field, label, type = "text") => {
-  // Check if this field should not be editable
-  const isNonEditableField = field === "average_expenses_per_month" || field === "average_expenses_per_year";
-  
-  return (
-    <div className="mb-5">
-      <label className="block text-sm font-semibold text-gray-300 mb-2 tracking-wide uppercase text-xs">
-        {label}
-      </label>
-      {isEditing && !isNonEditableField ? (
-        <input
-          type={type}
-          value={editableData[field] || ""}
-          onChange={(e) => handleInputChange(field, e.target.value)}
-          className="w-full px-4 py-2.5 bg-gray-750 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-450 focus:border-blue-450 transition-colors duration-200"
-        />
-      ) : (
-        <div className={`px-4 py-2.5 bg-gray-800 rounded-lg text-gray-200 border border-gray-700 ${isNonEditableField && isEditing ? 'cursor-not-allowed opacity-70' : ''}`}>
-          {userData[field] !== null && userData[field] !== undefined 
-            ? userData[field].toString() 
-            : "Still calculating"}
-        </div>
-      )}
-    </div>
-  );
-};
+    const isNonEditableField =
+      field === "average_expenses_per_month" || field === "average_expenses_per_year";
 
-  if (!userData) return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-white text-lg font-light">Loading profile...</div>
-    </div>
-  );
+    return (
+      <div className="mb-5">
+        <label className="block text-sm font-semibold text-gray-700 mb-2 tracking-wide uppercase text-xs">
+          {label}
+        </label>
+        {isEditing && !isNonEditableField ? (
+          <input
+            type={type}
+            value={editableData[field] || ""}
+            onChange={(e) => handleInputChange(field, e.target.value)}
+            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        ) : (
+          <div
+            className={`px-4 py-2.5 bg-gray-50 rounded-lg text-gray-700 border border-gray-200 ${
+              isNonEditableField && isEditing ? "cursor-not-allowed opacity-70" : ""
+            }`}
+          >
+            {userData[field] !== null && userData[field] !== undefined
+              ? userData[field].toString()
+              : "Still calculating"}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (!userData)
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600 text-lg">Loading profile...</div>
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-9 px-4">
+    <>
+    <Navbar></Navbar>
+    <div className="min-h-screen bg-gray-50 text-gray-800 py-9 px-4">
       <div className="max-w-7xl mx-auto">
+        
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">User Profile</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+            User Profile
+          </h1>
           <div className="flex space-x-3">
             {isEditing ? (
               <>
-                <button 
+                <button
                   onClick={handleSave}
-                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-emerald-400"
                 >
                   Save Changes
                 </button>
-                <button 
+                <button
                   onClick={handleEditToggle}
-                  className="px-5 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-all duration-200 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+                  className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg border border-gray-300"
                 >
                   Cancel
                 </button>
               </>
             ) : (
-              <button 
+              <button
                 onClick={handleEditToggle}
-                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-blue-400"
               >
                 Edit Profile
               </button>
@@ -199,23 +183,25 @@ export default function UserProfile() {
 
         {/* Status Messages */}
         {saveStatus.message && (
-          <div className={`mb-6 py-3 px-4 rounded-lg ${
-            saveStatus.type === "success" 
-              ? "bg-emerald-900/30 text-emerald-200 border border-emerald-800/50" 
-              : "bg-red-900/30 text-red-200 border border-red-800/50"
-          }`}>
+          <div
+            className={`mb-6 py-3 px-4 rounded-lg ${
+              saveStatus.type === "success"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                : "bg-red-50 text-red-700 border border-red-300"
+            }`}
+          >
             {saveStatus.message}
           </div>
         )}
 
-        {/* Profile Content */}
-        <div className="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
+        {/* Profile Card */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
           <div className="p-8">
             <div className="flex flex-col lg:flex-row gap-8">
-              {/* Profile Picture Column */}
+              {/* Profile Picture */}
               <div className="lg:w-1/4 flex flex-col items-center">
                 <div className="relative mb-6">
-                  <div className="w-32 h-32 rounded-full bg-gray-700 border-4 border-blue-500 flex items-center justify-center overflow-hidden">
+                  <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden">
                     {profileImage ? (
                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -223,136 +209,142 @@ export default function UserProfile() {
                     )}
                   </div>
                   {isEditing && (
-                    <label className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600 transition-colors">
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <label className="absolute bottom-0 right-0 bg-emerald-500 text-white p-2 rounded-full cursor-pointer hover:bg-emerald-600">
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                     </label>
                   )}
                 </div>
-                
-                {isUploading && (
-                  <div className="text-blue-400 mb-4">Uploading image...</div>
-                )}
-                
+                {isUploading && <div className="text-blue-500 mb-4">Uploading image...</div>}
+
                 {/* Sign In History */}
                 <div className="w-full mt-6">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <FaHistory className="mr-2 text-blue-400" />
-                    Sign-In History
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <FaHistory className="mr-2 text-blue-500" /> Sign-In History
                   </h3>
                   <div className="space-y-3">
                     {signInHistory.length > 0 ? (
                       signInHistory.map((session, index) => (
-                        <div key={index} className="bg-gray-750 p-3 rounded-lg border border-gray-600">
-                          <div className="text-sm text-gray-300">
-                            {session.timestamp.toLocaleDateString()} at {session.timestamp.toLocaleTimeString()}
+                        <div
+                          key={index}
+                          className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                        >
+                          <div className="text-sm text-gray-700">
+                            {session.timestamp.toLocaleDateString()} at {" "}
+                            {session.timestamp.toLocaleTimeString()}
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            Via {session.provider}
-                          </div>
+                          <div className="text-xs text-gray-500 mt-1">Via {session.provider}</div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-gray-400 text-sm">No sign-in history available</div>
+                      <div className="text-gray-500 text-sm">No sign-in history available</div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Details Columns */}
+              {/* Details */}
               <div className="lg:w-3/4 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* First Column: Personal Details */}
+                {/* Personal Details */}
                 <div>
-                  <h2 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-gray-700 flex items-center">
-                    <FaUser className="mr-2 text-blue-400" />
-                    Personal Details
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                    <FaUser className="mr-2 text-blue-500" /> Personal Details
                   </h2>
-                  
                   <div className="mb-5">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2 tracking-wide uppercase text-xs flex items-center">
-                      <FaCalendarAlt className="mr-2 text-blue-400" />
-                      Birthday
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase text-xs flex items-center">
+                      <FaCalendarAlt className="mr-2 text-emerald-500" /> Birthday
                     </label>
                     {isEditing ? (
                       <input
                         type="date"
-                        value={editableData.birthday ? editableData.birthday.toDate().toISOString().split('T')[0] : ""}
+                        value={
+                          editableData.birthday
+                            ? editableData.birthday.toDate().toISOString().split("T")[0]
+                            : ""
+                        }
                         onChange={(e) => handleInputChange("birthday", new Date(e.target.value))}
-                        className="w-full px-4 py-2.5 bg-gray-750 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-450 focus:border-blue-450 transition-colors duration-200"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-emerald-400"
                       />
                     ) : (
-                      <div className="px-4 py-2.5 bg-gray-800 rounded-lg text-gray-200 border border-gray-700">
-                        {userData.birthday ? userData.birthday.toDate().toLocaleDateString() : "Still calculating..."}
+                      <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-700 border border-gray-200">
+                        {userData.birthday
+                          ? userData.birthday.toDate().toLocaleDateString()
+                          : "Still calculating..."}
                       </div>
                     )}
                   </div>
 
-                  {renderField("gender", "Gender", "text", <FaVenusMars className="text-blue-400" />)}
-                  {renderField("marital_status", "Marital Status", "text", <FaRing className="text-blue-400" />)}
-                  {renderField("family_member_count", "Family Members", "number", <FaUsers className="text-blue-400" />)}
-                  {renderField("home_town", "Home Town", "text", <FaHome className="text-blue-400" />)}
+                  {renderField("gender", "Gender")}
+                  {renderField("marital_status", "Marital Status")}
+                  {renderField("family_member_count", "Family Members", "number")}
+                  {renderField("home_town", "Home Town")}
                 </div>
 
-                {/* Second Column: Personal Information */}
+                {/* Personal Information */}
                 <div>
-                  <h2 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-gray-700 flex items-center">
-                    <FaEnvelope className="mr-2 text-blue-400" />
-                    Personal Information
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                    <FaEnvelope className="mr-2 text-blue-500" /> Personal Information
                   </h2>
-                  
-                  {renderField("name", "Full Name", "text", <FaUser className="text-blue-400" />)}
-                  {renderField("email", "Email Address", "email", <FaEnvelope className="text-blue-400" />)}
-                  
+                  {renderField("name", "Full Name")}
+                  {renderField("email", "Email Address", "email")}
                   <div className="mb-5">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2 tracking-wide uppercase text-xs flex items-center">
-                      <FaKey className="mr-2 text-blue-400" />
-                      Password
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase text-xs flex items-center">
+                      <FaKey className="mr-2 text-emerald-500" /> Password
                     </label>
                     <div className="flex items-center space-x-3">
-                      <div className="px-4 py-2.5 bg-gray-800 rounded-lg text-gray-400 border border-gray-700 flex-1">
+                      <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-500 border border-gray-200 flex-1">
                         ••••••••
                       </div>
-                      <button 
+                      <button
                         onClick={handlePasswordReset}
-                        className="px-4 py-2.5 bg-red-900/40 hover:bg-red-900/60 text-red-200 font-medium rounded-lg transition-all duration-200 border border-red-800/50 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-opacity-50 whitespace-nowrap"
+                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-600 font-medium rounded-lg border border-red-300"
                       >
                         Reset
                       </button>
                     </div>
-                    
                     {resetStatus.message && (
-                      <div className={`mt-3 py-2 px-3 rounded-md ${
-                        resetStatus.type === "success" 
-                          ? "bg-emerald-900/30 text-emerald-200 border border-emerald-800/50" 
-                          : "bg-red-900/30 text-red-200 border border-red-800/50"
-                      }`}>
+                      <div
+                        className={`mt-3 py-2 px-3 rounded-md ${
+                          resetStatus.type === "success"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                            : "bg-red-50 text-red-700 border border-red-300"
+                        }`}
+                      >
                         {resetStatus.message}
                       </div>
                     )}
                   </div>
-
                   {renderField("nic_number", "NIC Number")}
-                  {renderField("occupation", "Occupation", "text", <FaBriefcase className="text-blue-400" />)}
+                  {renderField("occupation", "Occupation")}
                 </div>
 
-                {/* Third Column: Financial Information */}
+                {/* Financial Information */}
                 <div>
-                  <h2 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-gray-700 flex items-center">
-                    <FaMoneyBill className="mr-2 text-blue-400" />
-                    Financial Information
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                    <FaMoneyBill className="mr-2 text-blue-500" /> Financial Information
                   </h2>
-                  
-                  {renderField("monthly_salary", "Monthly Salary", "number", <FaMoneyBill className="text-blue-400" />)}
-                  {renderField("average_expenses_per_month", "Monthly Expenses", "number", <FaMoneyBill className="text-blue-400" />)}
-                  {renderField("average_expenses_per_year", "Yearly Expenses", "number", <FaMoneyBill className="text-blue-400" />)}
+                  {renderField("monthly_salary", "Monthly Salary", "number")}
+                  {renderField("average_expenses_per_month", "Monthly Expenses", "number")}
+                  {renderField("average_expenses_per_year", "Yearly Expenses", "number")}
                 </div>
               </div>
             </div>
@@ -360,5 +352,6 @@ export default function UserProfile() {
         </div>
       </div>
     </div>
+    </>
   );
 }

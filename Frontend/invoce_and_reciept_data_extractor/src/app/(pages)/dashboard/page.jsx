@@ -1,6 +1,7 @@
 "use client";
 import { auth } from "@/lib/firebase";
-import Navbar from "@/components/navbar";
+{/*import Navbar from "@components/";*/}
+import Navbar from '../../components/navbar';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
