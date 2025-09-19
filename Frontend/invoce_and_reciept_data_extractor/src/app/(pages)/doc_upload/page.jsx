@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import InvoiceSidebar from '../../components/InvoiceSidebar';
-import ReceiptSidebar from '../../components/ReceiptSidebar';
+import InvoiceSidebar from '../../../components/InvoiceSidebar';
+import ReceiptSidebar from '../../../components/ReceiptSidebar';
+import Header from '../../../components/Header';
+import InstructionsSidebar from '../../../components/InstructionsSidebar';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -96,50 +98,53 @@ export default function UploadPage() {
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-  <div className="min-h-screen bg-gray-50 py-12 pl-4 pr-0 sm:pl-6 lg:pl-8">
-      <div className="w-full flex gap-6">
-        {/* Left content column */}
-        <div className="flex-1">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Header />
+      <div className="py-12 pl-4 pr-0 sm:pl-6 lg:pl-8 w-full flex gap-6">
+        {/* Left sidebar column */}
+        <InstructionsSidebar />
+        <div className="flex-1 flex flex-col gap-6">
           <div className="text-left mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Upload Documents</h1>
-            <p className="mt-2 text-sm text-gray-600">Upload receipts and invoices to extract structured data</p>
+            <h1 className="text-3xl font-bold text-[#0F172A] drop-shadow">Upload Documents</h1>
+            <p className="mt-2 text-sm text-[#2F86A6]">Upload receipts and invoices to extract structured data</p>
           </div>
 
-          <div className="border-2 border-blue-400 bg-blue-50 rounded-lg p-6 mb-6 shadow-sm transition-all" onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
+          <div className="border-2 border-[#3341551a] bg-white rounded-2xl p-8 mb-6 shadow-lg transition-all" onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
             <div className="flex items-center justify-between">
-              <label className="block text-base font-semibold text-gray-700 mb-2">File Upload</label>
+              <label className="block text-base font-bold text-[#0F172A] mb-2">File Upload</label>
               <div>
                 <input id="file-upload" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} className="hidden" />
-                <label htmlFor="file-upload" className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded cursor-pointer hover:bg-blue-700 transition-all">Select Files</label>
+                <label htmlFor="file-upload" className="inline-block bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white font-bold py-2 px-6 rounded-2xl cursor-pointer hover:scale-105 transition-all">Select Files</label>
               </div>
             </div>
-            <div className="mt-4">
-              <div className={`w-full text-center text-blue-700 font-semibold ${dragActive ? 'bg-blue-100' : ''}`}>Drag & Drop files here</div>
+            <div className="mt-4 flex flex-col items-center justify-center">
+              {/* Document upload illustration */}
+              <img src="/upload-document-illustration-svg-download-png-8051288.webp" alt="Upload Document" className="mx-auto mb-2 w-32 h-32 object-contain" style={{ filter: 'contrast(0.85) brightness(1.2)' }} />
+              <div className={`w-full text-center text-[#2F86A6] font-bold ${dragActive ? 'bg-[#2F86A6]/10' : ''}`}>Drag & Drop files here</div>
             </div>
 
             {files.length > 0 && (
               <div className="mt-4">
-                <span className="text-sm text-gray-700">Selected Files:</span>
+                <span className="text-sm text-[#0F172A] font-bold">Selected Files:</span>
                 <ul className="list-disc ml-6">
                   {files.map((file, idx) => (
-                    <li key={idx} className="text-gray-800 text-sm">{file.name}</li>
+                    <li key={idx} className="text-[#2F86A6] text-sm font-semibold">{file.name}</li>
                   ))}
                 </ul>
               </div>
             )}
 
             <div className="mt-6 flex justify-end">
-              <button onClick={handleUpload} disabled={uploading || files.length === 0} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50">{uploading ? 'Uploading...' : 'Upload and Extract'}</button>
+              <button onClick={handleUpload} disabled={uploading || files.length === 0} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-6 rounded-2xl font-bold hover:scale-105 transition-all disabled:opacity-50">{uploading ? 'Uploading...' : 'Upload and Extract'}</button>
             </div>
           </div>
 
           {/* Preview area (left) */}
-          <div className="rounded-lg p-2 bg-white shadow-sm flex items-center justify-center">
+          <div className="rounded-2xl p-4 bg-white shadow-lg flex items-center justify-center">
             {previewUrl ? (
-              // smaller responsive preview: full width on very small screens, fixed 20rem width on sm+
-              <img src={previewUrl} alt="Preview" className="w-full sm:w-80 h-80 object-contain rounded" />
+              <img src={previewUrl} alt="Preview" className="w-full sm:w-80 h-80 object-contain rounded-2xl border-2 border-[#2F86A6]/20" />
             ) : (
-              <div className="w-full h-80 flex items-center justify-center text-gray-400">No preview available</div>
+              <div className="w-full h-80 flex items-center justify-center text-[#2F86A6]/50 font-bold">No preview available</div>
             )}
           </div>
         </div>
