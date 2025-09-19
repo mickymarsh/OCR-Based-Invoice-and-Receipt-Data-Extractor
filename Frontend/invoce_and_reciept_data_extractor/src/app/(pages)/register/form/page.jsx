@@ -4,16 +4,16 @@ import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
-// Animated Background Component (same as signup page)
+// Animated Background Component (light theme ocean style)
 const AnimatedBackground = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black opacity-95"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-white opacity-95"></div>
       
       {/* Animated shapes */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-600 rounded-full mix-blend-soft-light filter blur-xl opacity-30 animate-pulse"></div>
-      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-soft-light filter blur-xl opacity-20 animate-bounce delay-700"></div>
-      <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-indigo-700 rounded-full mix-blend-soft-light filter blur-xl opacity-25 animate-ping delay-1000"></div>
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-300 rounded-full mix-blend-soft-light filter blur-xl opacity-30 animate-pulse"></div>
+      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-teal-300 rounded-full mix-blend-soft-light filter blur-xl opacity-20 animate-bounce delay-700"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-green-300 rounded-full mix-blend-soft-light filter blur-xl opacity-25 animate-ping delay-1000"></div>
       
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
@@ -21,10 +21,10 @@ const AnimatedBackground = () => {
   );
 };
 
-// Footer Component (same as signup page)
+// Footer Component
 const Footer = () => {
   return (
-    <footer className="fixed bottom-4 left-0 right-0 text-center text-xs text-gray-400">
+    <footer className="fixed bottom-4 left-0 right-0 text-center text-xs text-gray-500">
       <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved.</p>
       <p className="mt-1">Secure authentication powered by Firebase</p>
     </footer>
@@ -62,30 +62,17 @@ export default function SignupFormPage() {
     console.log("=== SUBMIT BUTTON CLICKED ===");
     
     const user = auth.currentUser;
-    console.log("Firebase user object:", user);
-    
     if (!user) {
-      console.error("No user found - not signed up yet!");
       alert("Not signed up yet!");
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log("Getting ID token...");
       const idToken = await user.getIdToken();
-      console.log("ID token obtained successfully");
-      
-      // Convert birthday to ISO string (datetime format)
-      console.log("Form birthday value:", formData.birthday);
       const birthdayDate = new Date(formData.birthday);
-      console.log("Birthday as Date object:", birthdayDate);
       const birthdayISO = birthdayDate.toISOString();
-      console.log("Birthday ISO string:", birthdayISO);
-      
-      // Get current time for signup_at
       const signupAt = new Date().toISOString();
-      console.log("Signup at timestamp:", signupAt);
 
       const requestData = {
         uid: user.uid,
@@ -105,12 +92,6 @@ export default function SignupFormPage() {
         cluster_id: null
       };
 
-      console.log("=== FINAL REQUEST DATA ===");
-      console.log(JSON.stringify(requestData, null, 2));
-
-      console.log("Sending request to backend...");
-      console.log("URL: http://127.0.0.1:8000/auth/setup-profile");
-
       const response = await fetch("http://127.0.0.1:8000/auth/setup-profile", {
         method: "POST",
         headers: {
@@ -120,19 +101,12 @@ export default function SignupFormPage() {
         body: JSON.stringify(requestData),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response status text:", response.statusText);
-
       if (!response.ok) {
-        console.error("Request failed with status:", response.status);
         let errorData;
         try {
           errorData = await response.json();
-          console.error("Backend error details:", errorData);
-        } catch (parseError) {
-          console.error("Could not parse error response:", parseError);
+        } catch {
           const textError = await response.text();
-          console.error("Raw error response:", textError);
           errorData = { message: textError };
         }
         throw new Error(`HTTP error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
@@ -144,165 +118,210 @@ export default function SignupFormPage() {
       router.push("/dashboard");
       
     } catch (error) {
-      console.error("❌ CATCH BLOCK ERROR:", error);
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-    
+      console.error("❌ Error:", error);
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert("Network error: Could not connect to the server. Make sure your backend is running on http://127.0.0.1:8000");
+        alert("Network error: Could not connect to the server.");
       } else {
         alert(`Error: ${error.message}`);
       }
     } finally {
       setIsLoading(false);
-      console.log("=== SUBMIT PROCESS COMPLETED ===");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-white p-4 py-8 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-screen text-gray-800 p-4 py-8 relative overflow-hidden">
       <AnimatedBackground />
       
       {/* Main content container */}
-      <div className="w-full max-w-4xl bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-gray-700/50 z-10 mb-16">
+      <div className="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-gray-200 z-10 mb-16">
         {/* Header section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl shadow-lg mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl shadow-lg mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-green-300 to-teal-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
             Complete Your Profile
           </h1>
-          <p className="text-gray-400 mt-2 text-sm">Step 2: Tell us more about yourself</p>
+          <p className="text-gray-500 mt-2 text-sm">Step 2: Tell us more about yourself</p>
         </div>
 
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-blue-300 border-b border-blue-500/30 pb-2">Personal Information</h3>
+            <h3 className="font-semibold text-lg text-blue-600 border-b border-blue-300 pb-2">Personal Information</h3>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Full Name *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Full Name *</label>
               <input
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800 placeholder-gray-400"
                 placeholder="Enter full name"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">NIC Number *</label>
-              <input
-                name="nic_number"
-                value={formData.nic_number}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
-                placeholder="Enter NIC number"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Gender *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Gender *</label>
               <select
                 name="gender"
                 value={formData.gender}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
                 required
               >
-                <option value="" className="bg-gray-800">Select Gender</option>
-                <option value="male" className="bg-gray-800">Male</option>
-                <option value="female" className="bg-gray-800">Female</option>
-                <option value="other" className="bg-gray-800">Other</option>
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Marital Status *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Marital Status *</label>
               <select
                 name="marital_status"
                 value={formData.marital_status}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
                 required
               >
-                <option value="" className="bg-gray-800">Select Status</option>
-                <option value="single" className="bg-gray-800">Single</option>
-                <option value="married" className="bg-gray-800">Married</option>
-                <option value="divorced" className="bg-gray-800">Divorced</option>
-                <option value="widowed" className="bg-gray-800">Widowed</option>
+                <option value="">Select Status</option>
+                <option value="single">Single</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Home Town *</label>
-              <input
+              <label className="block text-sm font-medium mb-2 text-gray-700">Home Town *</label>
+              <select
                 name="home_town"
                 value={formData.home_town}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
-                placeholder="Enter home town"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
                 required
-              />
+              >
+                <option value="">Select Status</option>
+                <option value="urban">Urban</option>
+                <option value="suburban">Suburban</option>
+                <option value="rural">Rural</option>
+              </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Birthday *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Birthday *</label>
               <input
                 name="birthday"
                 type="date"
                 value={formData.birthday}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Family Members *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Education Level *</label>
+              <select
+                name="education_level"
+                value={formData.education_level}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
+                required
+              >
+                <option value="">Select Education Level</option>
+                <option value="al">A/L</option>
+                <option value="up_to_ol">Up to O/L</option>
+                <option value="diploma/tvet">Diploma/TVET</option>
+                <option value="bachelor">Bachelor</option>
+                <option value="postgraduate">Postgraduate</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Car ownership *</label>
+              <select
+                name="car_ownership"
+                value={formData.car_ownership}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
+                required
+              >
+                <option value="">Select Status</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Number of children *</label>
               <input
                 name="family_member_count"
                 type="number"
                 value={formData.family_member_count}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
-                placeholder="Number of family members"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
+                placeholder="Number of children"
                 min="1"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Exercise Frequency *</label>
+              <select
+                name="exercise_frequency"
+                value={formData.exercise_frequency}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all text-gray-800"
+                required
+              >
+                <option value="">Select yours</option>
+                <option value="1-2/wk">1-2/wk</option>
+                <option value="3-5/wk">3-5/wk</option>
+                <option value="daily">Daily</option>
+                <option value="rarely">Rarely</option>
+              </select>
             </div>
           </div>
 
           {/* Financial Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-green-300 border-b border-green-500/30 pb-2">Financial Information</h3>
+            <h3 className="font-semibold text-lg text-teal-600 border-b border-teal-300 pb-2">Financial Information</h3>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Occupation *</label>
-              <input
+              <label className="block text-sm font-medium mb-2 text-gray-700">Occupation *</label>
+              <select
                 name="occupation"
                 value={formData.occupation}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
-                placeholder="Enter occupation"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all text-gray-800"
                 required
-              />
+              >
+                <option value="">Select Occupation Level</option>
+                <option value="salaried-private">Salaried-Private</option>
+                <option value="salaried-public">Salaried-Public</option>
+                <option value="self-employed">Self-Employed</option>
+                <option value="student">Student</option>
+                <option value="gig-parttime">Gig/Part-time</option>
+                <option value="small-business">Small Business Owner</option>
+                <option value="unemployed">Unemployed</option>
+              </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Monthly Salary (LKR) *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Monthly Salary (LKR) *</label>
               <input
                 name="monthly_salary"
                 type="number"
                 value={formData.monthly_salary}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all text-gray-800"
                 placeholder="Enter monthly salary"
                 min="0"
                 required
@@ -310,39 +329,39 @@ export default function SignupFormPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Avg Monthly Expenses (LKR)</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Avg Monthly Expenses (LKR)</label>
               <input
                 name="average_expenses_per_month"
                 type="number"
                 value={formData.average_expenses_per_month}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all text-gray-800"
                 placeholder="Optional"
                 min="0"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Avg Yearly Expenses (LKR)</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Avg Yearly Expenses (LKR)</label>
               <input
                 name="average_expenses_per_year"
                 type="number"
                 value={formData.average_expenses_per_year}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all text-gray-800"
                 placeholder="Optional"
                 min="0"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Email</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Email</label>
               <input
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-white placeholder-gray-400"
+                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all text-gray-800"
                 placeholder="Optional email"
               />
             </div>
@@ -353,7 +372,7 @@ export default function SignupFormPage() {
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-8 py-3 rounded-xl text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white px-8 py-3 rounded-xl text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-blue-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -365,7 +384,7 @@ export default function SignupFormPage() {
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Save & Continue to Dashboard
