@@ -5,18 +5,18 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
-// Reuse your background and footer from signup if you like
+// Light ocean gradient background
 const AnimatedBackground = () => (
   <div className="fixed inset-0 -z-10 overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black opacity-95"></div>
-    <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-600 rounded-full mix-blend-soft-light filter blur-xl opacity-30 animate-pulse"></div>
-    <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-soft-light filter blur-xl opacity-20 animate-bounce delay-700"></div>
-    <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-indigo-700 rounded-full mix-blend-soft-light filter blur-xl opacity-25 animate-ping delay-1000"></div>
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-green-50 to-emerald-100 opacity-95"></div>
+    <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-300 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-pulse"></div>
+    <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-emerald-300 rounded-full mix-blend-soft-light filter blur-3xl opacity-25 animate-bounce delay-700"></div>
+    <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-teal-200 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-ping delay-1000"></div>
   </div>
 );
 
 const Footer = () => (
-  <footer className="fixed bottom-4 left-0 right-0 text-center text-xs text-gray-400">
+  <footer className="fixed bottom-4 left-0 right-0 text-center text-xs text-gray-600">
     <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved. </p>
     <p className="mt-1">Secure authentication powered by Firebase</p>
   </footer>
@@ -42,7 +42,7 @@ export default function LoginPage() {
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log("Logged in:", userCredential.user);
-      router.push("dashboard"); // redirect where you want after login
+      router.push("dashboard");
     } catch (error) {
       console.error("Login error:", error.message);
       setError(error.message);
@@ -68,29 +68,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-white p-4 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-screen text-gray-800 p-4 relative overflow-hidden">
       <AnimatedBackground />
 
-      <div className="w-full max-w-md bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-gray-700/50 z-10">
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-emerald-200/50 z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl shadow-lg mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-2xl shadow-lg mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-blue-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
             Login to Your Account
           </h1>
-          <p className="text-gray-400 mt-2 text-sm">Access your dashboard</p>
+          <p className="text-gray-500 mt-2 text-sm">Access your dashboard</p>
         </div>
 
         {/* Email + Password */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
             <input
-              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 bg-emerald-50 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               type="email"
               placeholder="Enter your email"
               value={email}
@@ -98,9 +98,9 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-600 mb-2">Password</label>
             <input
-              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 bg-emerald-50 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               type="password"
               placeholder="Enter your password"
               value={password}
@@ -110,7 +110,7 @@ export default function LoginPage() {
           <button
             onClick={handleEmailLogin}
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-green-500/25 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-400 hover:to-emerald-400 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-emerald-300/40 disabled:opacity-50"
           >
             {isLoading ? "Logging in..." : "Login"}
           </button>
@@ -118,16 +118,16 @@ export default function LoginPage() {
 
         {/* OR divider */}
         <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-600"></div>
-          <span className="mx-4 text-gray-400 text-sm">OR</span>
-          <div className="flex-grow border-t border-gray-600"></div>
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-4 text-gray-500 text-sm">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
         </div>
 
         {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-red-500/25 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-400 hover:to-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-gray-300/40 disabled:opacity-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -140,7 +140,7 @@ export default function LoginPage() {
 
         {/* Error message */}
         {error && (
-          <div className="mt-6 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 text-sm">
+          <div className="mt-6 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
             {error}
           </div>
         )}

@@ -1,14 +1,14 @@
 # routes/auth.py
 from fastapi import APIRouter, HTTPException, Depends
 from ..services.auth_service import save_user
-from ..models.user import User
+from ..models.users import Users
 from core.firebase_auth import verify_firebase_token
 
 
 router = APIRouter()
 
 @router.post("/setup-profile")
-def setup_profile(data: User, decoded_token=Depends(verify_firebase_token)):
+def setup_profile(data: Users, decoded_token=Depends(verify_firebase_token)):
     uid = decoded_token["uid"]
     email = decoded_token.get("email")
 
