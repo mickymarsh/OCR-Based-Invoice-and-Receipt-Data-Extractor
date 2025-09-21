@@ -25,12 +25,29 @@ export default function UserProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Options for dropdowns
+  const occupationOptions = ["salaried-private","salaried-public","self-employed","student","gig-parttime","small-business","unemployed"];
+  const educationOptions = [
+  "al",
+  "up_to_ol",
+  "diploma/tvet",
+  "bachelor",
+  "postgraduate"];
+  const maritalStatusOptions = ["married", "single","divorced"];
+  const homeTownOptions = ["urban", "suburban", "rural"];
+  const carOwnershipOptions = ["yes", "no"];
+  const exerciseFrequencyOptions = [
+  "1-2/wk",
+  "3-5/wk",
+  "daily",
+  "rarely"];
+
   useEffect(() => {
     const fetchUserData = async () => {
       const user = auth.currentUser;
       if (user) {
         const uid = user.uid;
-        const docRef = doc(db, "User", uid);
+        const docRef = doc(db, "Users", uid);
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
@@ -67,7 +84,7 @@ export default function UserProfile() {
     const user = auth.currentUser;
     if (!user) return;
     try {
-      const userRef = doc(db, "User", user.uid);
+      const userRef = doc(db, "Users", user.uid);
       await updateDoc(userRef, editableData);
       setUserData(editableData);
       setIsEditing(false);
@@ -105,7 +122,7 @@ export default function UserProfile() {
     }
   };
 
-  const renderField = (field, label, type = "text") => {
+  const renderField = (field, label, type = "text", options = null) => {
     const isNonEditableField =
       field === "average_expenses_per_month" || field === "average_expenses_per_year";
 
@@ -115,12 +132,26 @@ export default function UserProfile() {
           {label}
         </label>
         {isEditing && !isNonEditableField ? (
-          <input
-            type={type}
-            value={editableData[field] || ""}
-            onChange={(e) => handleInputChange(field, e.target.value)}
-            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          options ? (
+            <select
+              value={editableData[field] || ""}
+              onChange={(e) => handleInputChange(field, e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {options.map((option, index) => (
+                <option key={index} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type={type}
+              value={editableData[field] || ""}
+              onChange={(e) => handleInputChange(field, e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          )
         ) : (
           <div
             className={`px-4 py-2.5 bg-gray-50 rounded-lg text-gray-700 border border-gray-200 ${
@@ -145,213 +176,216 @@ export default function UserProfile() {
 
   return (
     <>
-    <Navbar></Navbar>
-    <div className="min-h-screen bg-gray-50 text-gray-800 py-9 px-4">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
-            User Profile
-          </h1>
-          <div className="flex space-x-3">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={handleSave}
-                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-emerald-400"
-                >
-                  Save Changes
-                </button>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50 text-gray-800 py-9 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+              User Profile
+            </h1>
+            <div className="flex space-x-3">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSave}
+                    className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-emerald-400"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={handleEditToggle}
+                    className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg border border-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
                 <button
                   onClick={handleEditToggle}
-                  className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg border border-gray-300"
+                  className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-blue-400"
                 >
-                  Cancel
+                  Edit Profile
                 </button>
-              </>
-            ) : (
-              <button
-                onClick={handleEditToggle}
-                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-md focus:ring-2 focus:ring-blue-400"
-              >
-                Edit Profile
-              </button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Status Messages */}
-        {saveStatus.message && (
-          <div
-            className={`mb-6 py-3 px-4 rounded-lg ${
-              saveStatus.type === "success"
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
-                : "bg-red-50 text-red-700 border border-red-300"
-            }`}
-          >
-            {saveStatus.message}
-          </div>
-        )}
+          {/* Status Messages */}
+          {saveStatus.message && (
+            <div
+              className={`mb-6 py-3 px-4 rounded-lg ${
+                saveStatus.type === "success"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                  : "bg-red-50 text-red-700 border border-red-300"
+              }`}
+            >
+              {saveStatus.message}
+            </div>
+          )}
 
-        {/* Profile Card */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
-          <div className="p-8">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Profile Picture */}
-              <div className="lg:w-1/4 flex flex-col items-center">
-                <div className="relative mb-6">
-                  <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden">
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <FaUser className="text-5xl text-gray-400" />
-                    )}
-                  </div>
-                  {isEditing && (
-                    <label className="absolute bottom-0 right-0 bg-emerald-500 text-white p-2 rounded-full cursor-pointer hover:bg-emerald-600">
-                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </label>
-                  )}
-                </div>
-                {isUploading && <div className="text-blue-500 mb-4">Uploading image...</div>}
-
-                {/* Sign In History */}
-                <div className="w-full mt-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <FaHistory className="mr-2 text-blue-500" /> Sign-In History
-                  </h3>
-                  <div className="space-y-3">
-                    {signInHistory.length > 0 ? (
-                      signInHistory.map((session, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 p-3 rounded-lg border border-gray-200"
-                        >
-                          <div className="text-sm text-gray-700">
-                            {session.timestamp.toLocaleDateString()} at {" "}
-                            {session.timestamp.toLocaleTimeString()}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">Via {session.provider}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-gray-500 text-sm">No sign-in history available</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="lg:w-3/4 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Personal Details */}
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
-                    <FaUser className="mr-2 text-blue-500" /> Personal Details
-                  </h2>
-                  <div className="mb-5">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase text-xs flex items-center">
-                      <FaCalendarAlt className="mr-2 text-emerald-500" /> Birthday
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="date"
-                        value={
-                          editableData.birthday
-                            ? editableData.birthday.toDate().toISOString().split("T")[0]
-                            : ""
-                        }
-                        onChange={(e) => handleInputChange("birthday", new Date(e.target.value))}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-emerald-400"
-                      />
-                    ) : (
-                      <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-700 border border-gray-200">
-                        {userData.birthday
-                          ? userData.birthday.toDate().toLocaleDateString()
-                          : "Still calculating..."}
-                      </div>
-                    )}
-                  </div>
-
-                  {renderField("gender", "Gender")}
-                  {renderField("marital_status", "Marital Status")}
-                  {renderField("family_member_count", "Family Members", "number")}
-                  {renderField("home_town", "Home Town")}
-                </div>
-
-                {/* Personal Information */}
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
-                    <FaEnvelope className="mr-2 text-blue-500" /> Personal Information
-                  </h2>
-                  {renderField("name", "Full Name")}
-                  {renderField("email", "Email Address", "email")}
-                  <div className="mb-5">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase text-xs flex items-center">
-                      <FaKey className="mr-2 text-emerald-500" /> Password
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-500 border border-gray-200 flex-1">
-                        ••••••••
-                      </div>
-                      <button
-                        onClick={handlePasswordReset}
-                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-600 font-medium rounded-lg border border-red-300"
-                      >
-                        Reset
-                      </button>
+          {/* Profile Card */}
+          <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+            <div className="p-8">
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Profile Picture & Sign-In History */}
+                <div className="lg:w-1/4 flex flex-col items-center">
+                  <div className="relative mb-6">
+                    <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden">
+                      {profileImage ? (
+                        <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <FaUser className="text-5xl text-gray-400" />
+                      )}
                     </div>
-                    {resetStatus.message && (
-                      <div
-                        className={`mt-3 py-2 px-3 rounded-md ${
-                          resetStatus.type === "success"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
-                            : "bg-red-50 text-red-700 border border-red-300"
-                        }`}
-                      >
-                        {resetStatus.message}
-                      </div>
+                    {isEditing && (
+                      <label className="absolute bottom-0 right-0 bg-emerald-500 text-white p-2 rounded-full cursor-pointer hover:bg-emerald-600">
+                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      </label>
                     )}
                   </div>
-                  {renderField("nic_number", "NIC Number")}
-                  {renderField("occupation", "Occupation")}
+                  {isUploading && <div className="text-blue-500 mb-4">Uploading image...</div>}
+
+                  {/* Sign In History */}
+                  <div className="w-full mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <FaHistory className="mr-2 text-blue-500" /> Sign-In History
+                    </h3>
+                    <div className="space-y-3">
+                      {signInHistory.length > 0 ? (
+                        signInHistory.map((session, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                          >
+                            <div className="text-sm text-gray-700">
+                              {session.timestamp.toLocaleDateString()} at {" "}
+                              {session.timestamp.toLocaleTimeString()}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Via {session.provider}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-gray-500 text-sm">No sign-in history available</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Financial Information */}
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
-                    <FaMoneyBill className="mr-2 text-blue-500" /> Financial Information
-                  </h2>
-                  {renderField("monthly_salary", "Monthly Salary", "number")}
-                  {renderField("average_expenses_per_month", "Monthly Expenses", "number")}
-                  {renderField("average_expenses_per_year", "Yearly Expenses", "number")}
+                {/* Details */}
+                <div className="lg:w-3/4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Personal Details */}
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                      <FaUser className="mr-2 text-blue-500" /> Personal Details
+                    </h2>
+                    <div className="mb-5">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 tracking-wide uppercase text-xs flex items-center">
+                        <FaCalendarAlt className="mr-2 text-emerald-500" />
+                        Birthday
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={
+                            editableData.birthday
+                              ? editableData.birthday.toDate().toISOString().split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) => handleInputChange("birthday", e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-700 border border-gray-200">
+                          {userData.birthday
+                            ? userData.birthday.toDate().toLocaleDateString()
+                            : "Still calculating..."}
+                        </div>
+                      )}
+                    </div>
+
+
+                    {renderField("gender", "Gender")}
+                    {renderField("marital_status", "Marital Status", "text", maritalStatusOptions)}
+                    {renderField("family_member_count", "No of children", "number")}
+                    {renderField("home_town", "Home Town", "text", homeTownOptions)}
+                    {renderField("exercise_frequency", "Exercise Frequency", "text", exerciseFrequencyOptions)}
+                  </div>
+
+                  {/* Personal Information */}
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                      <FaEnvelope className="mr-2 text-blue-500" /> Personal Information
+                    </h2>
+                    {renderField("name", "Full Name")}
+                    {renderField("email", "Email Address", "email")}
+                    <div className="mb-5">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase text-xs flex items-center">
+                        <FaKey className="mr-2 text-emerald-500" /> Password
+                      </label>
+                      <div className="flex items-center space-x-3">
+                        <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-500 border border-gray-200 flex-1">
+                          ••••••••
+                        </div>
+                        <button
+                          onClick={handlePasswordReset}
+                          className="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-600 font-medium rounded-lg border border-red-300"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                      {resetStatus.message && (
+                        <div
+                          className={`mt-3 py-2 px-3 rounded-md ${
+                            resetStatus.type === "success"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                              : "bg-red-50 text-red-700 border border-red-300"
+                          }`}
+                        >
+                          {resetStatus.message}
+                        </div>
+                      )}
+                    </div>
+                    {renderField("education_level", "Education level", "text", educationOptions)}
+                    {renderField("occupation", "Occupation", "text", occupationOptions)}
+                    {renderField("car_ownership", "Car Ownership", "text", carOwnershipOptions)}
+                  </div>
+
+                  {/* Financial Information */}
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200 flex items-center">
+                      <FaMoneyBill className="mr-2 text-blue-500" /> Financial Information
+                    </h2>
+                    {renderField("monthly_salary", "Monthly Salary", "number")}
+                    {renderField("average_expenses_per_month", "Monthly Expenses", "number")}
+                    {renderField("average_expenses_per_year", "Yearly Expenses", "number")}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

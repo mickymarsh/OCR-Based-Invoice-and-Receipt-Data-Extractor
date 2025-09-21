@@ -34,17 +34,19 @@ const Footer = () => {
 export default function SignupFormPage() {
   const [formData, setFormData] = useState({
     name: "",
-    nic_number: "",
     gender: "",
     marital_status: "",
     home_town: "",
     birthday: "",
+    education_level: "",
+    car_ownership: "",
     occupation: "",
     monthly_salary: "",
     average_expenses_per_month: "",
     average_expenses_per_year: "",
     family_member_count: "",
-    email: ""
+    email: "",
+    exercise_frequency: "",
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -78,17 +80,19 @@ export default function SignupFormPage() {
         uid: user.uid,
         signup_at: signupAt,
         name: formData.name,
-        nic_number: formData.nic_number,
         gender: formData.gender,
         marital_status: formData.marital_status,
         home_town: formData.home_town,
         birthday: birthdayISO,
+        education_level: formData.education_level,
+        car_ownership: formData.car_ownership,
         occupation: formData.occupation,
         monthly_salary: parseInt(formData.monthly_salary),
         average_expenses_per_month: formData.average_expenses_per_month ? parseInt(formData.average_expenses_per_month) : null,
         average_expenses_per_year: formData.average_expenses_per_year ? parseInt(formData.average_expenses_per_year) : null,
         family_member_count: parseInt(formData.family_member_count),
         email: formData.email || user.email,
+        exercise_frequency: formData.exercise_frequency,
         cluster_id: null
       };
 

@@ -2,10 +2,10 @@ from datetime import datetime
 from fastapi import HTTPException
 from firebase_admin import auth, firestore
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError
-from core.firestore import get_user_collection
-from ..models.user import User
+from core.firestore import get_users_collection
+from ..models.users import Users
 
-def save_user(uid: str, email: str, user_data: dict) -> User:
+def save_user(uid: str, email: str, user_data: dict) -> Users:
     """
     Save user profile data to Firestore (DO NOT create new Firebase user)
     """
@@ -15,14 +15,14 @@ def save_user(uid: str, email: str, user_data: dict) -> User:
 
     try:
         # Check if user already exists in Firestore
-        user_ref = get_user_collection().document(uid)
+        user_ref = get_users_collection().document(uid)
         existing_user = user_ref.get()
         
         if existing_user.exists:
             print("User already exists in Firestore, updating profile...")
             # Update existing user
             user_ref.update(user_data)
-            return User(**existing_user.to_dict())
+            return Users(**existing_user.to_dict())
         
         # Convert birthday string to datetime if needed
         birthday = user_data.get("birthday")
@@ -34,11 +34,12 @@ def save_user(uid: str, email: str, user_data: dict) -> User:
             "uid": uid,
             "signup_at": datetime.utcnow(),
             "name": user_data["name"],
-            "nic_number": user_data["nic_number"],
             "gender": user_data["gender"],
             "marital_status": user_data["marital_status"],
             "home_town": user_data["home_town"],
             "birthday": birthday,
+            "education_level": user_data["education_level"],
+            "car_ownership": user_data["car_ownership"],
             "occupation": user_data["occupation"],
             "monthly_salary": user_data["monthly_salary"],
             "average_expenses_per_month": user_data.get("average_expenses_per_month"),
@@ -46,6 +47,7 @@ def save_user(uid: str, email: str, user_data: dict) -> User:
             "cluster_id": None,
             "family_member_count": user_data["family_member_count"],
             "email": email,
+            "exercise_frequency": user_data["exercise_frequency"],
             "provider": "email",
             "created_at": firestore.SERVER_TIMESTAMP
         }
@@ -54,7 +56,7 @@ def save_user(uid: str, email: str, user_data: dict) -> User:
         user_ref.set(user_doc)
 
         print(f"User profile saved successfully: {email} (UID: {uid})")
-        return User(**user_doc)
+        return Users(**user_doc)
 
     except Exception as e:
         print(f"Unexpected error: {e}")
