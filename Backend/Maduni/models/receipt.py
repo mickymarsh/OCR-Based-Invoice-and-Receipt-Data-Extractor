@@ -5,6 +5,6 @@ from datetime import datetime
 class Receipt(BaseModel):
     order_id: Optional[str] = None
     seller_name: str
-    uploaded_date: str
-    total_amount: float
+    date: str
+    total_price: float
     category: str
