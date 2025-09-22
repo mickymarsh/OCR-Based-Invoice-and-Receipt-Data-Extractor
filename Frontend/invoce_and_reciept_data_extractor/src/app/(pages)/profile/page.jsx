@@ -25,6 +25,15 @@ export default function UserProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const Footer = () => {
+  return (
+    <footer className="bottom-0 left-0 right-0 text-center text-xs text-white bg-gray-900 py-2 border-t border-blue-800 z-10">
+      <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved.</p>
+      <p className="mt-1 text-white/80">Secure authentication powered by Firebase</p>
+    </footer>
+  );
+};
+
   // Options for dropdowns
   const occupationOptions = ["salaried-private","salaried-public","self-employed","student","gig-parttime","small-business","unemployed"];
   const educationOptions = [
@@ -385,7 +394,9 @@ export default function UserProfile() {
             </div>
           </div>
         </div>
+
       </div>
+      <Footer></Footer>
     </>
   );
 }
