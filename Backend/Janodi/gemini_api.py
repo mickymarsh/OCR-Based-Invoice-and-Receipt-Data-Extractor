@@ -119,15 +119,22 @@ def classify_document(text: str) -> str:
     payload = {
         "contents": [{
             "parts": [{
-                "text": f"""
+                                "text": f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
+
+
+Additionally, for both receipts and invoices, predict the expense type from the following categories: food, transport, utilities, entertainment, shopping, healthcare. Use the row word set (item names, descriptions, etc.) to help determine the type. If multiple types are present, choose the most relevant or dominant one. If you cannot determine, return 'unknown'.
 
 Rules:
 - Receipt: If the text contains features like a business/shop name, phone number, list of items (food, products, etc.), and prices—even if noisy or misspelled—classify as receipt. Also classify as receipt if you see Subtotal/Tax/Total, date, payment method (cash/card/order id), or 'Thank you'.
 - Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
 - Unknown: If neither clearly matches.
 
-Return only one word: receipt OR invoice OR unknown.
+Return a JSON object with two fields:
+{{
+    "document_type": "receipt" | "invoice" | "unknown",
+    "expense_type": "food" | "transport" | "utilities" | "entertainment" | "shopping" | "healthcare" | "unknown"
+}}
 
 Text:
 {text}

@@ -149,7 +149,7 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Right sidebar: conditionally render InvoiceSidebar or ReceiptSidebar */}
+        {/* Right sidebar: conditionally render InvoiceSidebar or ReceiptSidebar, pass expense type */}
         {sidebarOpen && extractedData && extractedData.DocumentType === 'invoice' && (
           <InvoiceSidebar
             data={extractedData}
@@ -158,6 +158,7 @@ export default function UploadPage() {
             onSave={handleSave}
             onDataChange={handleDataChange}
             onClose={closeSidebar}
+            expenseType={extractedData.ExpenseType}
           />
         )}
         {sidebarOpen && extractedData && extractedData.DocumentType === 'receipt' && (
@@ -168,6 +169,7 @@ export default function UploadPage() {
             onSave={handleSave}
             onDataChange={handleDataChange}
             onClose={closeSidebar}
+            expenseType={extractedData.ExpenseType}
           />
         )}
       </div>

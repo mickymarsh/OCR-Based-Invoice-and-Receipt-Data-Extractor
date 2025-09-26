@@ -6,7 +6,7 @@ const invoiceFields = [
   "item_description", "item_quantity", "item_total_price", "item_unit_price", "supplier_address", "supplier_name", "tax_amount", "tax_rate"
 ];
 
-export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataChange, onClose }) {
+export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataChange, onClose, expenseType }) {
   return (
     <aside className={`flex flex-col bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl shadow-lg transition-all duration-300 overflow-hidden ml-auto w-96 pointer-events-auto`}>
       <div className="flex justify-between items-center p-4 border-b border-[#3341551a] bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10">
@@ -14,6 +14,11 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
         <button onClick={onClose} className="text-[#2F86A6] hover:text-[#34BE82] font-bold text-lg">&times;</button>
       </div>
       <div className="flex-1 p-6 overflow-y-auto min-h-0">
+        {/* Expense Type Display */}
+        <div className="mb-4">
+          <label className="block text-sm font-bold text-[#34BE82]">Expense Type</label>
+          <p className="mt-1 text-base text-[#0F172A] font-bold">{expenseType || data.ExpenseType || "Unknown"}</p>
+        </div>
         <div className="grid grid-cols-1 gap-4">
           {invoiceFields.map(field => (
             <div key={field} className="mb-4">
