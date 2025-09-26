@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from Maduni.routes import auth
 from Maduni.routes import document
+from Maduni.routes import receipt_rout
 
 
 app = FastAPI()
@@ -28,6 +29,8 @@ def read_root():
 app.include_router(auth.router, prefix="/auth", tags=["Firebase Auth"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(document.router, prefix="/fetch", tags=["Fetch_receipts_invoices"])
+app.include_router(receipt_rout.router, prefix="/get", tags=["Receipts"])
+
 
 
 if __name__ == "__main__":

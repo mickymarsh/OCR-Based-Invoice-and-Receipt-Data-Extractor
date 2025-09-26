@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import Navbar from "../../components/navbar";
+import Chart from "../../components/chart"
 
 export default function UserTransactions() {
   const [invoices, setInvoices] = useState([]);
@@ -386,6 +387,7 @@ export default function UserTransactions() {
               )}
             </div>
           )}
+          <Chart></Chart>
           <Footer />
         </div>
       </div>
