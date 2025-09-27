@@ -4,6 +4,8 @@ import { auth } from "@/lib/firebase";
 import Navbar from '../../components/navbar';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Chart from "../../components/chart"
+
 
 const ExpenseCard = ({ title, amount, icon, color, onClick }) => {
   // Extract base color from gradient for hover effect
@@ -378,6 +380,8 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          <Chart></Chart>
 
           {/* Table */}
           <div className="px-8 pb-16">
