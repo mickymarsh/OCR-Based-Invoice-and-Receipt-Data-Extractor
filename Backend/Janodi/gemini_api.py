@@ -119,13 +119,21 @@ def classify_document(text: str) -> str:
     payload = {
         "contents": [{
             "parts": [{
-                                "text": f"""
+                "text": f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
 
+Additionally, for both receipts and invoices, predict the expense type from the following categories: food, transport, utilities, entertainment, shopping, healthcare. Use the row word set (item names, descriptions, etc.) to help determine the type. If multiple types are present, choose the most relevant or dominant one.
 
-Additionally, for both receipts and invoices, predict the expense type from the following categories: food, transport, utilities, entertainment, shopping, healthcare. Use the row word set (item names, descriptions, etc.) to help determine the type. If multiple types are present, choose the most relevant or dominant one. If you cannot determine, return 'unknown'.
+Expense Type Rules:
+- Food: If the row word set contains any food or dish name (from any cuisine or country), classify expense_type as 'food'. Use your knowledge of global food names, ingredients, and dishes. This includes sushi, pizza, pasta, curry, tacos, burgers, ramen, sashimi, and any other food or drink item.
+- Transport: If the row word set contains transport-related terms (bus, taxi, train, flight, fare, ticket, ride, etc.), classify as 'transport'.
+- Utilities: If the row word set contains utility-related terms (electricity, water, gas, internet, bill, etc.), classify as 'utilities'.
+- Entertainment: If the row word set contains entertainment-related terms (movie, concert, show, ticket, event, etc.), classify as 'entertainment'.
+- Shopping: If the row word set contains product names, brands, or shopping-related terms (clothes, electronics, shoes, store, mall, etc.), classify as 'shopping'.
+- Healthcare: If the row word set contains healthcare-related terms (medicine, doctor, hospital, pharmacy, clinic, etc.), classify as 'healthcare'.
+- If you cannot determine, but there are item names that resemble any category above, infer the most likely category. Never return 'unknown' for expense_type if you can reasonably infer a category from item names, even if noisy or misspelled.
 
-Rules:
+Document Type Rules:
 - Receipt: If the text contains features like a business/shop name, phone number, list of items (food, products, etc.), and prices—even if noisy or misspelled—classify as receipt. Also classify as receipt if you see Subtotal/Tax/Total, date, payment method (cash/card/order id), or 'Thank you'.
 - Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
 - Unknown: If neither clearly matches.

@@ -159,6 +159,7 @@ export default function UploadPage() {
             onDataChange={handleDataChange}
             onClose={closeSidebar}
             expenseType={extractedData.ExpenseType}
+            expenseTypeDropdown={editing}
           />
         )}
         {sidebarOpen && extractedData && extractedData.DocumentType === 'receipt' && (
@@ -170,6 +171,7 @@ export default function UploadPage() {
             onDataChange={handleDataChange}
             onClose={closeSidebar}
             expenseType={extractedData.ExpenseType}
+            expenseTypeDropdown={editing}
           />
         )}
       </div>
