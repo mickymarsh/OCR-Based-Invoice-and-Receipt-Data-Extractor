@@ -88,7 +88,7 @@ export default function Home() {
               href="/register/signup"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-8 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-emerald-700/30"
             >
-              Sign In
+              Sign Up
             </Link>
           </div>
         </div>

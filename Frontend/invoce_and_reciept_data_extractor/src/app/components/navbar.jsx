@@ -26,7 +26,7 @@ const Navbar = () => {
         {/* Right side - Navigation Links pushed to right corner */}
         <div className="flex items-center gap-6">
           <Link 
-            href="/login" 
+            href="/doc_upload" 
             className="text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
           >
             Upload
