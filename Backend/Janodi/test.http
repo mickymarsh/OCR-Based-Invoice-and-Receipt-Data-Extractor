@@ -14,3 +14,27 @@ server: uvicorn
 content-length: 903
 content-type: application/json
 connection: close
+###
+POST http://127.0.0.1:8000/api/receipt
+Content-Type: application/json
+
+{
+  "category": "Healthcare",
+  "date": "28 September 2025 at 11:55:22 UTC+5:30",
+  "item": "Pharmacy purchase – Vitamins",
+  "order_id": "H036",
+  "seller_address": "Wellawatte, Colombo",
+  "seller_name": "LifeCare Pharmacy",
+  "subtotal": 850,
+  "tax": 0,
+  "total_price": 850,
+  "uploaded_date": "28 September 2025 at 12:20:14 UTC+5:30",
+  "user_ref": "/Users/WaY6ClkdcLUjWs32fPoaNm4I6v53"
+}
+
+HTTP/1.1 200  - OK
+date: Sat, 27 Sep 2025 10:21:58 GMT
+server: uvicorn
+content-length: 48
+content-type: application/json
+connection: close
