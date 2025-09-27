@@ -13,14 +13,19 @@ export default function UserTransactions() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all"); // "all", "receipts", or "invoices"
 
+  // Pagination states
+  const [receiptsCurrentPage, setReceiptsCurrentPage] = useState(1);
+  const [invoicesCurrentPage, setInvoicesCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
   const Footer = () => {
-    return (
-      <footer className="fixed bottom-0 left-0 right-0 text-center text-xs text-white bg-gray-900 py-2 border-t border-blue-800 z-10">
-        <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved.</p>
-        <p className="mt-1 text-white/80">Secure authentication powered by Firebase</p>
-      </footer>
-    );
-  };
+  return (
+    <footer className="bottom-0 left-0 right-0 text-center text-xs text-white bg-gray-900 py-2 border-t border-blue-800 z-10">
+      <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved.</p>
+      <p className="mt-1 text-white/80">Secure authentication powered by Firebase</p>
+    </footer>
+  );
+};
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -56,6 +61,42 @@ export default function UserTransactions() {
 
     fetchTransactions();
   }, []);
+
+  // Pagination functions for receipts
+  const getCurrentReceipts = () => {
+    const startIndex = (receiptsCurrentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return receipts.slice(startIndex, endIndex);
+  };
+
+  const getTotalReceiptPages = () => {
+    return Math.ceil(receipts.length / itemsPerPage);
+  };
+
+  const handleReceiptsPageChange = (page) => {
+    setReceiptsCurrentPage(page);
+  };
+
+  // Pagination functions for invoices
+  const getCurrentInvoices = () => {
+    const startIndex = (invoicesCurrentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return invoices.slice(startIndex, endIndex);
+  };
+
+  const getTotalInvoicePages = () => {
+    return Math.ceil(invoices.length / itemsPerPage);
+  };
+
+  const handleInvoicesPageChange = (page) => {
+    setInvoicesCurrentPage(page);
+  };
+
+  // Reset pagination when tab changes
+  useEffect(() => {
+    setReceiptsCurrentPage(1);
+    setInvoicesCurrentPage(1);
+  }, [activeTab]);
 
   const handleEdit = (item, type) => {
     const id = type === "receipts" ? item.order_id : item.invoice_number;
@@ -155,9 +196,9 @@ export default function UserTransactions() {
   };
 
   const filteredReceipts =
-    activeTab === "all" || activeTab === "receipts" ? receipts : [];
+    activeTab === "all" || activeTab === "receipts" ? getCurrentReceipts() : [];
   const filteredInvoices =
-    activeTab === "all" || activeTab === "invoices" ? invoices : [];
+    activeTab === "all" || activeTab === "invoices" ? getCurrentInvoices() : [];
 
   if (loading)
     return (
@@ -175,11 +216,64 @@ export default function UserTransactions() {
     </button>
   );
 
+  // Pagination Component
+  const Pagination = ({ currentPage, totalPages, onPageChange, type }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`px-3 py-1 rounded-md text-sm ${
+            currentPage === 1
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          Previous
+        </button>
+        
+        <div className="flex space-x-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => onPageChange(page)}
+              className={`px-3 py-1 rounded-md text-sm ${
+                currentPage === page
+                  ? "bg-blue-600 text-white"
+                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+        
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`px-3 py-1 rounded-md text-sm ${
+            currentPage === totalPages
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          Next
+        </button>
+        
+        <span className="text-sm text-blue-800 ml-2">
+          Page {currentPage} of {totalPages}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 ">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-900">
@@ -224,73 +318,85 @@ export default function UserTransactions() {
                   <p>No receipts available</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredReceipts.map((rec) => (
-                    <div
-                      key={rec.order_id}
-                      className="border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow relative bg-white/70"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold text-blue-900">{rec.seller_name}</h3>
-                          <p className="text-sm text-blue-700">Order: {rec.order_id}</p>
+                <>
+                  <div className="space-y-4">
+                    {filteredReceipts.map((rec) => (
+                      <div
+                        key={`receipt-${rec.order_id}`}
+                        className="border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow relative bg-white/70"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-semibold text-blue-900">{rec.seller_name}</h3>
+                            <p className="text-sm text-blue-700">Order: {rec.order_id}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Date: {rec.date ? new Date(rec.date).toLocaleDateString() : 'N/A'}
+                            </p>
+                            <p className="text-xs text-gray-600">Category: {rec.category || 'N/A'}</p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="bg-teal-50 text-teal-800 text-xs px-2 py-1 rounded-full">
+                              Rs{rec.total_price}
+                            </span>
+
+                            {editingId === rec.order_id && editingType === "receipts" ? (
+                              <ButtonIcon onClick={handleSave} color="bg-green-500">✓</ButtonIcon>
+                            ) : (
+                              <>
+                                <ButtonIcon onClick={() => handleEdit(rec, "receipts")} color="bg-blue-500">✏️</ButtonIcon>
+                                <ButtonIcon onClick={() => handleDelete("receipts", rec.order_id)} color="bg-red-500">🗑️</ButtonIcon>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Amount and buttons in separate flex */}
-                        <div className="flex items-center gap-2">
-                          <span className="bg-teal-50 text-teal-800 text-xs px-2 py-1 rounded-full">
-                            Rs{rec.total_price}
-                          </span>
-
-                          {editingId === rec.order_id && editingType === "receipts" ? (
-                            <ButtonIcon onClick={handleSave} color="bg-green-500">✓</ButtonIcon>
-                          ) : (
-                            <>
-                              <ButtonIcon onClick={() => handleEdit(rec, "receipts")} color="bg-blue-500">✏️</ButtonIcon>
-                              <ButtonIcon onClick={() => handleDelete("receipts", rec.order_id)} color="bg-red-500">🗑️</ButtonIcon>
-                            </>
-                          )}
-                        </div>
+                        {editingId === rec.order_id && editingType === "receipts" && (
+                          <div className="space-y-3 mt-3">
+                            <input
+                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={editingData.order_id || ""}
+                              onChange={(e) => handleChange("order_id", e.target.value)}
+                              placeholder="Order ID"
+                            />
+                            <input
+                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={editingData.seller_name || ""}
+                              onChange={(e) => handleChange("seller_name", e.target.value)}
+                              placeholder="Seller Name"
+                            />
+                            <input
+                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              type="number"
+                              value={editingData.total_price || 0}
+                              onChange={(e) => handleChange("total_price", parseFloat(e.target.value))}
+                              placeholder="Total Price"
+                            />
+                            <input
+                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              type="date"
+                              value={editingData.date ? new Date(editingData.date).toISOString().split("T")[0] : ""}
+                              onChange={(e) => handleChange("date", e.target.value)}
+                            />
+                            <input
+                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={editingData.category || ""}
+                              onChange={(e) => handleChange("category", e.target.value)}
+                              placeholder="Category"
+                            />
+                          </div>
+                        )}
                       </div>
-
-                      {editingId === rec.order_id && editingType === "receipts" && (
-                        <div className="space-y-3 mt-3">
-                          <input
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={editingData.order_id || ""}
-                            onChange={(e) => handleChange("order_id", e.target.value)}
-                            placeholder="Order ID"
-                          />
-                          <input
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={editingData.seller_name || ""}
-                            onChange={(e) => handleChange("seller_name", e.target.value)}
-                            placeholder="Seller Name"
-                          />
-                          <input
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            type="number"
-                            value={editingData.total_price || 0}
-                            onChange={(e) => handleChange("total_price", parseFloat(e.target.value))}
-                            placeholder="Total Price"
-                          />
-                          <input
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            type="date"
-                            value={editingData.date ? new Date(editingData.date).toISOString().split("T")[0] : ""}
-                            onChange={(e) => handleChange("date", e.target.value)}
-                          />
-                          <input
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={editingData.category || ""}
-                            onChange={(e) => handleChange("category", e.target.value)}
-                            placeholder="Category"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  
+                  <Pagination
+                    currentPage={receiptsCurrentPage}
+                    totalPages={getTotalReceiptPages()}
+                    onPageChange={handleReceiptsPageChange}
+                    type="receipts"
+                  />
+                </>
               )}
             </div>
           )}
@@ -311,84 +417,99 @@ export default function UserTransactions() {
                   <p>No invoices available</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredInvoices.map((inv) => {
-                    const dueDate = new Date(inv.due_date);
-                    const isPast = dueDate < new Date();
-                    return (
-                      <div
-                        key={inv.invoice_number}
-                        className={`border rounded-lg p-4 hover:shadow-md transition-shadow relative ${
-                          isPast ? "bg-red-100 border-red-200" : "bg-white/70 border-blue-200"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-semibold text-blue-900">{inv.seller_name}</h3>
-                            <p className="text-sm text-blue-700">Invoice: {inv.invoice_number}</p>
+                <>
+                  <div className="space-y-4">
+                    {filteredInvoices.map((inv) => {
+                      const dueDate = new Date(inv.due_date);
+                      const isPast = dueDate < new Date();
+                      return (
+                        <div
+                          key={`invoice-${inv.invoice_number}`}
+                          className={`border rounded-lg p-4 hover:shadow-md transition-shadow relative ${
+                            isPast ? "bg-red-100 border-red-200" : "bg-white/70 border-blue-200"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-semibold text-blue-900">{inv.seller_name}</h3>
+                              <p className="text-sm text-blue-700">Invoice: {inv.invoice_number}</p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                Due Date: {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}
+                                {isPast && <span className="text-red-600 ml-2">(Past Due)</span>}
+                              </p>
+                              <p className="text-xs text-gray-600">Category: {inv.category || 'N/A'}</p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${isPast ? "bg-red-200 text-red-800" : "bg-orange-100 text-orange-800"}`}>
+                                Rs{inv.total_amount}
+                              </span>
+
+                              {editingId === inv.invoice_number && editingType === "invoices" ? (
+                                <ButtonIcon onClick={handleSave} color="bg-green-500">✓</ButtonIcon>
+                              ) : (
+                                <>
+                                  <ButtonIcon onClick={() => handleEdit(inv, "invoices")} color="bg-blue-500">✏️</ButtonIcon>
+                                  <ButtonIcon onClick={() => handleDelete("invoices", inv.invoice_number)} color="bg-red-500">🗑️</ButtonIcon>
+                                </>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs px-2 py-1 rounded-full ${isPast ? "bg-red-200 text-red-800" : "bg-orange-100 text-orange-800"}`}>
-                              Rs{inv.total_amount}
-                            </span>
-
-                            {editingId === inv.invoice_number && editingType === "invoices" ? (
-                              <ButtonIcon onClick={handleSave} color="bg-green-500">✓</ButtonIcon>
-                            ) : (
-                              <>
-                                <ButtonIcon onClick={() => handleEdit(inv, "invoices")} color="bg-blue-500">✏️</ButtonIcon>
-                                <ButtonIcon onClick={() => handleDelete("invoices", inv.invoice_number)} color="bg-red-500">🗑️</ButtonIcon>
-                              </>
-                            )}
-                          </div>
+                          {editingId === inv.invoice_number && editingType === "invoices" && (
+                            <div className="space-y-3 mt-3">
+                              <input
+                                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={editingData.invoice_number || ""}
+                                onChange={(e) => handleChange("invoice_number", e.target.value)}
+                                placeholder="Invoice #"
+                              />
+                              <input
+                                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={editingData.seller_name || ""}
+                                onChange={(e) => handleChange("seller_name", e.target.value)}
+                                placeholder="Seller Name"
+                              />
+                              <input
+                                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                type="number"
+                                value={editingData.total_amount || 0}
+                                onChange={(e) => handleChange("total_amount", parseFloat(e.target.value))}
+                                placeholder="Total Amount"
+                              />
+                              <input
+                                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                type="date"
+                                value={editingData.due_date ? new Date(editingData.due_date).toISOString().split("T")[0] : ""}
+                                onChange={(e) => handleChange("due_date", e.target.value)}
+                              />
+                              <input
+                                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={editingData.category || ""}
+                                onChange={(e) => handleChange("category", e.target.value)}
+                                placeholder="Category"
+                              />
+                            </div>
+                          )}
                         </div>
-
-                        {editingId === inv.invoice_number && editingType === "invoices" && (
-                          <div className="space-y-3 mt-3">
-                            <input
-                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              value={editingData.invoice_number || ""}
-                              onChange={(e) => handleChange("invoice_number", e.target.value)}
-                              placeholder="Invoice #"
-                            />
-                            <input
-                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              value={editingData.seller_name || ""}
-                              onChange={(e) => handleChange("seller_name", e.target.value)}
-                              placeholder="Seller Name"
-                            />
-                            <input
-                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              type="number"
-                              value={editingData.total_amount || 0}
-                              onChange={(e) => handleChange("total_amount", parseFloat(e.target.value))}
-                              placeholder="Total Amount"
-                            />
-                            <input
-                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              type="date"
-                              value={editingData.due_date ? new Date(editingData.due_date).toISOString().split("T")[0] : ""}
-                              onChange={(e) => handleChange("due_date", e.target.value)}
-                            />
-                            <input
-                              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              value={editingData.category || ""}
-                              onChange={(e) => handleChange("category", e.target.value)}
-                              placeholder="Category"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <Pagination
+                    currentPage={invoicesCurrentPage}
+                    totalPages={getTotalInvoicePages()}
+                    onPageChange={handleInvoicesPageChange}
+                    type="invoices"
+                  />
+                </>
               )}
             </div>
           )}
-          <Footer />
         </div>
+        
       </div>
+      <Footer />
     </div>
   );
 }

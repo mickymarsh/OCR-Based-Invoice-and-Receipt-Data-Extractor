@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field
 from ..models.invoice import Invoice
 from ..models.receipt import Receipt
 from ..services.firestore_service import fetch_invoices_by_user, fetch_receipts_by_user, update_invoice, update_receipt, delete_invoice, delete_receipt
@@ -51,4 +52,5 @@ async def remove_receipt(order_id: str,  user_id: str):
         return {"status": "success", "message": "Receipt deleted"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
 
