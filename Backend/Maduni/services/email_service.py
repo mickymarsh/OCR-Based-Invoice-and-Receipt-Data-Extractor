@@ -61,8 +61,8 @@ Smart Expense Manager
     )
 
     try:
-        #sg = SendGridAPIClient(SENDGRID_API_KEY)
-        sg = SendGridAPIClient("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")
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        #sg = SendGridAPIClient("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")
         response = sg.send(message)
         print(f"Email sent to {user_email}, status: {response.status_code}")
         return True
