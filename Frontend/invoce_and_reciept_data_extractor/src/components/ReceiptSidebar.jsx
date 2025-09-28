@@ -84,7 +84,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
         const result = await response.json();
         if (result && result.doc_id) {
           setLastSavedId(result.doc_id);
-          alert('Receipt saved! Document ID: ' + result.doc_id);
+          alert('Receipt saved successfully!');
         } else {
           alert('Receipt saved, but no document ID returned.');
         }
@@ -193,65 +193,75 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
         </div>
         <div className="flex flex-col gap-2 mt-6">
           {/* Save button for extracted data before editing */}
-          {!editing && (
+          {!editing && !lastSavedId && (
             <>
-              <button onClick={() => setShowSummary(true)} className="bg-green-600 text-white py-2 px-4 rounded-2xl font-bold hover:bg-green-700">Save Receipt</button>
-              {showSummary && (
-                <div
-                  className="fixed inset-0 flex items-center justify-center z-50"
-                  
-                >
-                  {/* Overlay for readability */}
-                  <div className="absolute inset-0 bg-white bg-opacity-70" 
-                  style={{
-                    backgroundImage: 'url(/receipt/receipt.jpeg)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: '#295e99ff', // fallback color
-                  }}></div>
-                  <div className="relative bg-white rounded-2xl shadow-xl p-6 w-96 max-h-[80vh] flex flex-col" style={{zIndex: 2}}>
-                    <h3 className="text-lg font-bold mb-2 text-[#0F172A]">Confirm Save</h3>
-                    <div className="mb-4 overflow-y-auto text-[#1e293b]" style={{ maxHeight: '55vh' }}>
-                      <div className="font-bold text-[#0F172A] mb-1">Expense Type:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().category}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Date:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().date}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Order ID:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().order_id}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Seller Name:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().seller_name}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Seller Address:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().seller_address}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Items:</div>
-                      <ul className="list-disc ml-4 text-[#1e293b]">
-                        {getFormattedData().items.map((item, idx) => (
-                          <li key={idx}>{item.name} (Qty: {item.quantity}, Price: {item.price})</li>
-                        ))}
-                      </ul>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Subtotal:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().subtotal}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Tax:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().tax}</div>
-                      <div className="font-bold text-[#0F172A] mt-2 mb-1">Total Price:</div>
-                      <div className="text-[#1e293b]">{getFormattedData().total_price}</div>
-                    </div>
-                    <div className="flex gap-2 justify-end mt-2">
-                      <button onClick={handleSaveToDB} className="bg-green-600 text-white py-2 px-4 rounded-2xl font-bold hover:bg-green-700">Confirm & Save</button>
-                      <button onClick={() => setShowSummary(false)} className="bg-gray-300 text-[#0F172A] py-2 px-4 rounded-2xl font-bold hover:bg-gray-400">Cancel</button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <div className="flex gap-2 justify-between">
+                <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Edit</button>
+                <button onClick={() => setShowSummary(true)} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Receipt</button>
+              </div>
             </>
           )}
-          <div className="flex justify-between">
-            <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">{editing ? 'Cancel' : 'Edit'}</button>
+          <div className="flex gap-2 justify-between">
             {editing && (
-              <button onClick={async () => { onSave(); await handleSaveToDB(); }} className="bg-green-600 text-white py-2 px-4 rounded-2xl font-bold hover:bg-green-700">Save Changes</button>
+              <div className="flex gap-2 justify-between">
+                <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Cancel</button>
+                <button onClick={() => setShowSummary(true)} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Changes</button>
+              </div>
             )}
           </div>
           {lastSavedId && (
-            <div className="mt-2 text-green-700 font-bold">Saved! Document ID: {lastSavedId}</div>
+            <div className="mt-2 text-green-700 font-bold">Receipt Saved! </div>
+          )}
+          {showSummary && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-50"
+            >
+              {/* Overlay for readability */}
+              <div className="absolute inset-0 bg-white bg-opacity-70"
+                style={{
+                  backgroundImage: 'url(/receipt/receipt.jpeg)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: '#295e99ff', // fallback color
+                }}></div>
+              <div className="relative bg-white rounded-2xl shadow-xl p-6 w-96 max-h-[80vh] flex flex-col" style={{ zIndex: 2 }}>
+                <h3 className="text-lg font-bold mb-2 text-[#0F172A]">Confirm Save</h3>
+                <div className="mb-4 overflow-y-auto text-[#1e293b]" style={{ maxHeight: '55vh' }}>
+                  <div className="font-bold text-[#0F172A] mb-1">Expense Type:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().category}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Date:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().date}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Order ID:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().order_id}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Seller Name:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().seller_name}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Seller Address:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().seller_address}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Items:</div>
+                  <ul className="list-disc ml-4 text-[#1e293b]">
+                    {getFormattedData().items.map((item, idx) => (
+                      <li key={idx}>{item.name} (Qty: {item.quantity}, Price: {item.price})</li>
+                    ))}
+                  </ul>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Subtotal:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().subtotal}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Tax:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().tax}</div>
+                  <div className="font-bold text-[#0F172A] mt-2 mb-1">Total Price:</div>
+                  <div className="text-[#1e293b]">{getFormattedData().total_price}</div>
+                </div>
+                <div className="flex gap-2 justify-end mt-2">
+                  <button onClick={async () => { 
+                    if (editing) { 
+                      onSave(); 
+                      if (typeof onEdit === 'function') onEdit(); // Switch to viewing mode
+                    }
+                    await handleSaveToDB(); 
+                  }} className="bg-green-600 text-white py-2 px-4 rounded-2xl font-bold hover:bg-green-700">Confirm & Save</button>
+                  <button onClick={() => setShowSummary(false)} className="bg-gray-300 text-[#0F172A] py-2 px-4 rounded-2xl font-bold hover:bg-gray-400">Cancel</button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

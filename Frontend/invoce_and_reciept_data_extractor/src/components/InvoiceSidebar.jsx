@@ -208,7 +208,13 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
               <button onClick={handleShowSummary} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Invoice</button>
       {/* Summary Modal */}
       {showSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{
+          backgroundImage: 'url(/receipt/receipt.jpeg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#295e99ff', // fallback color
+        }}>
           <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg max-h-[80vh] flex flex-col">
             <h3 className="text-lg font-bold mb-4 text-[#2F86A6]">Confirm Invoice Save</h3>
             <div className="mb-4 flex-1 overflow-y-auto">
