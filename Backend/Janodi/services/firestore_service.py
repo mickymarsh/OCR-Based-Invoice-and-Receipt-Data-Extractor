@@ -1,3 +1,4 @@
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
@@ -9,6 +10,18 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
+
+def save_invoice_to_firestore(invoice_data):
+    """
+    Save invoice data to Firestore 'invoices' collection.
+    Returns the document ID.
+    """
+    
+    doc_ref = db.collection("Invoice").add(invoice_data)
+    return doc_ref[1].id
+
+
 
 def save_receipt_to_firestore(receipt_data: dict) -> str:
     """

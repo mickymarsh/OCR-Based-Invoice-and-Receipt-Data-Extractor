@@ -199,15 +199,16 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
               {showSummary && (
                 <div
                   className="fixed inset-0 flex items-center justify-center z-50"
+                  
+                >
+                  {/* Overlay for readability */}
+                  <div className="absolute inset-0 bg-white bg-opacity-70" 
                   style={{
                     backgroundImage: 'url(/receipt/receipt.jpeg)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundColor: '#295e99ff', // fallback color
-                  }}
-                >
-                  {/* Overlay for readability */}
-                  <div className="absolute inset-0 bg-white bg-opacity-70" style={{zIndex: 1}}></div>
+                  }}></div>
                   <div className="relative bg-white rounded-2xl shadow-xl p-6 w-96 max-h-[80vh] flex flex-col" style={{zIndex: 2}}>
                     <h3 className="text-lg font-bold mb-2 text-[#0F172A]">Confirm Save</h3>
                     <div className="mb-4 overflow-y-auto text-[#1e293b]" style={{ maxHeight: '55vh' }}>
