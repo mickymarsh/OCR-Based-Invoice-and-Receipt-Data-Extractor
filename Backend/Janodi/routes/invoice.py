@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from ..services.firestore_service import save_invoice_to_firestore
+from datetime import datetime
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ class InvoiceData(BaseModel):
 	seller_name: Optional[str]
 	sent_email: Optional[bool]
 	total_amount: Optional[float]
-	uploaded_date: Optional[str]  # Accept as string/timestamp
+	uploaded_date: Optional[str]  # System-generated ISO date string
 	user_id: Optional[str]
 
 @router.post("/invoice")
