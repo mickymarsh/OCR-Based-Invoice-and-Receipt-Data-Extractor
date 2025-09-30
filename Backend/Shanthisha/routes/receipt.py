@@ -4,6 +4,33 @@ from datetime import datetime
 
 router = APIRouter()
 
+@router.get("/receipts/{user_id}/filter")
+async def get_receipts_for_category_month(
+    user_id: str,
+    category: str = Query(..., description="Expense category (e.g., Food, Transport, etc.)"),
+    month: int = Query(..., description="Month (1-12)"),
+    year: int = Query(..., description="Year (e.g., 2025)")
+):
+    """
+    Fetch receipts for a user filtered by category, month, and year
+    """
+    print(f"Fetching receipts for user_id: {user_id}, category: {category}, month: {month}, year: {year}")
+    # Validate month
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+    # Validate year
+    current_year = datetime.now().year
+    if year < 2000 or year > current_year + 1:
+        raise HTTPException(status_code=400, detail=f"Year must be between 2000 and {current_year + 1}")
+    try:
+        from ..services.receipt_service import get_receipts_by_category_month
+        receipts = get_receipts_by_category_month(user_id=user_id, category=category, month=month, year=year)
+        return {"receipts": receipts}
+    except Exception as e:
+        print(f"Error fetching receipts by category/month: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/receipts/{user_id}")
 async def get_receipts(user_id: str):
     """
