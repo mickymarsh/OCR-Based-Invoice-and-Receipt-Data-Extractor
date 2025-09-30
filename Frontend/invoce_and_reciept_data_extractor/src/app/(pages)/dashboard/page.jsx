@@ -403,7 +403,7 @@ export default function Dashboard() {
                 {/* Main content */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 relative z-10">
                 <button
-                  onClick={() => handleCategoryClick("food")}
+                  onClick={() => router.push(`/allExpenses?category=Food`)}
                   className="category-food p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
@@ -420,7 +420,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button
-                  onClick={() => handleCategoryClick("transport")}
+                  onClick={() => router.push(`/allExpenses?category=Transport`)}
                   className="category-transport p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
@@ -437,7 +437,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button
-                  onClick={() => handleCategoryClick("utilities")}
+                  onClick={() => router.push(`/allExpenses?category=Utilities`)}
                   className="category-utilities p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
@@ -454,7 +454,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button
-                  onClick={() => handleCategoryClick("entertainment")}
+                  onClick={() => router.push(`/allExpenses?category=Entertainment`)}
                   className="category-entertainment p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
@@ -471,7 +471,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button
-                  onClick={() => handleCategoryClick("shopping")}
+                  onClick={() => router.push(`/allExpenses?category=Shopping`)}
                   className="category-shopping p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
@@ -488,7 +488,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button
-                  onClick={() => handleCategoryClick("healthcare")}
+                  onClick={() => router.push(`/allExpenses?category=Healthcare`)}
                   className="category-healthcare p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
                   {/* Liquid bubble effect */}
