@@ -118,49 +118,63 @@ async def upload_files(files: List[UploadFile] = File(...)):
             # Extract text
             text = extract_text_from_image(contents)
 
-            # Classify document (wrap in try to avoid crashing if external service fails)
+            # Classify document and get expense type
             try:
-                doc_type = classify_document(text)
-                logger.info("Classified document %s as %s", file.filename, doc_type)
+                doc_class = classify_document(text)
+                # If Gemini returns a JSON string, parse it
+                import json
+                if isinstance(doc_class, str):
+                    try:
+                        doc_json = json.loads(doc_class)
+                        doc_type = doc_json.get("document_type", "unknown")
+                        expense_type = doc_json.get("expense_type", "unknown")
+                    except Exception:
+                        doc_type = doc_class
+                        expense_type = "unknown"
+                elif isinstance(doc_class, dict):
+                    doc_type = doc_class.get("document_type", "unknown")
+                    expense_type = doc_class.get("expense_type", "unknown")
+                else:
+                    doc_type = str(doc_class)
+                    expense_type = "unknown"
+                logger.info(f"Classified document {file.filename} as {doc_type}, expense type: {expense_type}")
             except Exception as e:
-                logger.exception("Document classification failed, defaulting to 'invoice'")
-                doc_type = "invoice"  # Changed default to invoice for testing
+                logger.exception("Document classification failed, defaulting to 'invoice' and 'unknown'")
+                doc_type = "invoice"
+                expense_type = "unknown"
+
+            # Normalize unknown expense types to 'other'
+            normalized_expense_type = expense_type if expense_type and expense_type.lower() not in ["unknown", "", None] else "other"
 
             if doc_type == "receipt":
                 logger.info("Receipt detected for file %s", file.filename)
-                # Use pre-finetuned model for receipts
                 structured = extract_receipt_structured_data(temp_path)
                 if not isinstance(structured, dict):
                     raise ValueError("Receipt model did not return a dict")
-                # Normalize lists to strings where appropriate
                 parsed_data = {k: ' '.join(v) if isinstance(v, list) else v for k, v in structured.items()}
                 parsed_data["DocumentType"] = "receipt"
+                parsed_data["ExpenseType"] = normalized_expense_type
             elif doc_type == "invoice":
                 logger.info("Invoice detected for file %s", file.filename)
-                # Try model-based invoice extraction first; fallback to regex parser
                 try:
                     structured = extract_invoice_structured_data(temp_path)
                     if isinstance(structured, dict) and any(v for v in structured.values()):
-                        # Normalize lists to strings if needed
                         parsed_data = {k: ' '.join(v) if isinstance(v, list) else v for k, v in structured.items()}
-                        
                         logger.info("Invoice model produced structured data for %s", file.filename)
                     else:
                         logger.info("Invoice model returned empty result for %s, using regex fallback", file.filename)
                         parsed_data = parse_extracted_data_invoice(text)
                 except Exception as exc:
-                    # Log more helpful message for gated/auth errors
                     tb = traceback.format_exc()
                     logger.error("Invoice model error for %s: %s\n%s", file.filename, str(exc), tb)
                     if 'gated' in str(exc).lower() or '401' in str(exc) or 'access' in str(exc).lower():
                         logger.error("Invoice model appears to be gated or requires HF authentication. Set HUGGINGFACE_HUB_TOKEN env var with a token that has access.")
                     parsed_data = parse_extracted_data_invoice(text)
-
-                # Ensure DocumentType is present
                 parsed_data["DocumentType"] = "invoice"
+                parsed_data["ExpenseType"] = normalized_expense_type
             else:
                 logger.info("Unknown doc type for file %s: %s", file.filename, doc_type)
-                parsed_data = {"Address": "Unknown", "Date": "", "Item": "", "OrderId": "", "Subtotal": "", "Tax": "", "Title": "", "TotalPrice": "", "DocumentType": "unknown"}
+                parsed_data = {"Address": "Unknown", "Date": "", "Item": "", "OrderId": "", "Subtotal": "", "Tax": "", "Title": "", "TotalPrice": "", "DocumentType": "unknown", "ExpenseType": normalized_expense_type}
 
             results.append(parsed_data)
            
