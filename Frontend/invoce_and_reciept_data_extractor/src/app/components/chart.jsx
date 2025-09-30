@@ -46,7 +46,6 @@ export default function ReceiptsCharts() {
   // ✅ Fetch receipts when userId is available
   useEffect(() => {
     if (!userId) return;
-
     fetch(`http://127.0.0.1:8000/get/receipts/${userId}`)
       .then((res) => res.json())
       .then((json) => {

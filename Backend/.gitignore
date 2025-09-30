@@ -3,3 +3,4 @@ serviceAccountKey.json
 .env.local
 __pycache__
 .env*
+node_modules/
