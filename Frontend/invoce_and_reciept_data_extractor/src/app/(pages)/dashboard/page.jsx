@@ -2,9 +2,44 @@
 import { auth } from "@/lib/firebase";
 {/*import Navbar from "@components/";*/}
 import Navbar from '../../components/navbar';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 import Chart from "../../components/chart"
+import Head from 'next/head';
+
+// Adding styles for liquid animations
+const liquidStyles = `
+  @keyframes liquidFloat {
+    0% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-10px) rotate(2deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(10px) rotate(-2deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+  }
+
+  @keyframes liquidPulse {
+    0% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.1); }
+    100% { opacity: 0.3; transform: scale(1); }
+  }
+
+  @keyframes liquidMove {
+    0% { transform: translate(0, 0); }
+    33% { transform: translate(5px, 10px); }
+    66% { transform: translate(-5px, 5px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  .category-food .absolute,
+  .category-transport .absolute,
+  .category-utilities .absolute,
+  .category-entertainment .absolute,
+  .category-shopping .absolute,
+  .category-healthcare .absolute {
+    animation: liquidPulse 8s infinite;
+  }
+`;
 
 
 const ExpenseCard = ({ title, amount, icon, color, onClick }) => {
@@ -58,77 +93,117 @@ const ExpenseRow = ({ date, name, category, amount, categoryColor }) => {
 export default function Dashboard() {
   const userName = "Maduni";
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [recentExpenses, setRecentExpenses] = useState([]);
+  const [userId, setUserId] = useState(null);
+  const [expectedExpenses, setExpectedExpenses] = useState(45000.0);
   const router = useRouter();
+  
+  // Add dynamic liquid animation styles
+  useEffect(() => {
+    // Add the liquid animation styles to the document head
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = liquidStyles;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      // Clean up the style element when component unmounts
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
-  const totalExpenses = 18225.0;
-  const expectedExpenses = 45000.0;
+  // Get current month and year
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+  const currentYear = currentDate.getFullYear();
+  
+  // Helper function to check if an expense is from the current month
+  const isCurrentMonthExpense = (expense) => {
+    const expenseDate = new Date(expense.date);
+    const expenseMonth = expenseDate.getMonth() + 1;
+    const expenseYear = expenseDate.getFullYear();
+    return expenseMonth === currentMonth && expenseYear === currentYear;
+  };
+  
+  // Calculate total expenses for current month only
+  const totalExpenses = recentExpenses.reduce((sum, expense) => {
+    if (isCurrentMonthExpense(expense)) {
+      const amount = parseFloat(expense.amount.replace(/,/g, ''));
+      return sum + (isNaN(amount) ? 0 : amount);
+    }
+    return sum;
+  }, 0);
+
+  // Category expenses for current month only
   const categoryExpenses = {
-    food: 4835.0,
-    transport: 2100.0,
-    utilities: 3840.0,
-    entertainment: 1200.0,
-    shopping: 4750.0,
-    healthcare: 2500.0,
+    food: recentExpenses
+      .filter(expense => expense.category === "Food" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
+    transport: recentExpenses
+      .filter(expense => expense.category === "Transport" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
+    utilities: recentExpenses
+      .filter(expense => expense.category === "Utilities" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
+    entertainment: recentExpenses
+      .filter(expense => expense.category === "Entertainment" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
+    shopping: recentExpenses
+      .filter(expense => expense.category === "Shopping" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
+    healthcare: recentExpenses
+      .filter(expense => expense.category === "Healthcare" && isCurrentMonthExpense(expense))
+      .reduce((sum, expense) => sum + parseFloat(expense.amount.replace(/,/g, '')), 0),
   };
 
-  const recentExpenses = [
-    {
-      date: "2025-09-07",
-      name: "Grocery Shopping",
-      category: "Food",
-      amount: "2,685.00",
-      categoryColor: "bg-[#34BE82]/15 text-[#0F172A]",
-    },
-    {
-      date: "2025-09-06",
-      name: "Gas Station",
-      category: "Transport",
-      amount: "1,350.00",
-      categoryColor: "bg-[#2F86A6]/15 text-[#2F86A6]",
-    },
-    {
-      date: "2025-09-06",
-      name: "Netflix Subscription",
-      category: "Entertainment",
-      amount: "1,200.00",
-      categoryColor: "bg-purple-500/10 text-purple-700",
-    },
-    {
-      date: "2025-09-05",
-      name: "Electricity Bill",
-      category: "Utilities",
-      amount: "3,840.00",
-      categoryColor: "bg-[#F2F013]/15 text-[#7A7A00]",
-    },
-    {
-      date: "2025-09-05",
-      name: "Restaurant Dinner",
-      category: "Food",
-      amount: "2,150.00",
-      categoryColor: "bg-[#34BE82]/15 text-[#0F172A]",
-    },
-    {
-      date: "2025-09-04",
-      name: "Online Shopping",
-      category: "Shopping",
-      amount: "4,750.00",
-      categoryColor: "bg-pink-500/10 text-pink-700",
-    },
-    {
-      date: "2025-09-04",
-      name: "Doctor Visit",
-      category: "Healthcare",
-      amount: "2,500.00",
-      categoryColor: "bg-red-500/10 text-red-700",
-    },
-    {
-      date: "2025-09-03",
-      name: "Bus Pass",
-      category: "Transport",
-      amount: "750.00",
-      categoryColor: "bg-[#2F86A6]/15 text-[#2F86A6]",
-    },
-  ];
+  // Category color mapping
+  const categoryColors = {
+    Food: "bg-[#34BE82]/15 text-[#0F172A]",
+    Transport: "bg-[#2F86A6]/15 text-[#2F86A6]",
+    Utilities: "bg-[#F2F013]/15 text-[#7A7A00]",
+    Entertainment: "bg-purple-500/10 text-purple-700",
+    Shopping: "bg-pink-500/10 text-pink-700",
+    Healthcare: "bg-red-500/10 text-red-700",
+  };
+
+  // ✅ Listen to Firebase authentication
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        setUserId(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ✅ Fetch receipts when userId is available
+  useEffect(() => {
+    if (!userId) return;
+    console.log("Fetching receipts for user:", userId);
+    fetch(`http://127.0.0.1:8000/get/receipts/${userId}`)
+      .then((res) => res.json())
+      .then((json) => {
+        console.log("Fetched receipts:", json);
+        if (json.receipts) {
+          // Format receipts for the table
+          const formatted = json.receipts.map((r, index) => ({
+            date: new Date(r.date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }),
+            name: `Expense ${index + 1}`, // Default name since backend doesn't provide names
+            category: r.category,
+            amount: parseFloat(r.total_price).toLocaleString("en-LK", { minimumFractionDigits: 2 }),
+            categoryColor: categoryColors[r.category] || "bg-gray-500/10 text-gray-700",
+          }));
+          setRecentExpenses(formatted);
+        }
+      })
+      .catch((err) => console.error("Error fetching receipts:", err));
+  }, [userId]);
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
@@ -249,11 +324,13 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   {/* Actual Expenses */}
                   <div className="space-y-4">
-                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>Total Expenses</h2>
+                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {new Date().toLocaleString('default', { month: 'long' })} Expenses
+                    </h2>
                     <p className="text-5xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] to-[#34BE82] bg-clip-text" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Rs. {totalExpenses.toLocaleString("en-LK", { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-[#2F86A6] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Spent this month</p>
+                    <p className="text-[#2F86A6] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Current month spending</p>
                   </div>
 
                   {/* Expected Expenses */}
@@ -263,7 +340,9 @@ export default function Dashboard() {
                       Rs. {expectedExpenses.toLocaleString("en-LK", { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex items-center space-x-6">
-                      <p className="text-[#34BE82] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Monthly budget</p>
+                      <p className="text-[#34BE82] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        {new Date().toLocaleString('default', { month: 'long' })} budget
+                      </p>
                       <div className="flex items-center space-x-3">
                         <div className="w-20 h-3 bg-[#E5E7EB] rounded-full overflow-hidden border border-[#3341551a]">
                           <div
@@ -287,7 +366,9 @@ export default function Dashboard() {
                         className={`w-4 h-4 rounded-full ${totalExpenses <= expectedExpenses ? "bg-[#2FDD92]" : "bg-red-500"}`}
                       />
                       <span className="text-[#0F172A] font-bold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        {totalExpenses <= expectedExpenses ? "On track with budget ✨" : "Over budget ⚠️"}
+                        {totalExpenses <= expectedExpenses ? 
+                          `On track with ${new Date().toLocaleString('default', { month: 'long' })} budget ✨` : 
+                          `Over ${new Date().toLocaleString('default', { month: 'long' })} budget ⚠️`}
                       </span>
                     </div>
                     <div className="text-right">
@@ -310,73 +391,119 @@ export default function Dashboard() {
           {/* Categories */}
           <div className="px-8 mb-8">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl font-black text-[#0F172A] mb-8 tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>Expense Categories</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              <h2 className="text-3xl font-black text-[#0F172A] mb-8 tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
+                {new Date().toLocaleString('default', { month: 'long' })} Expense Categories
+              </h2>
+              <div className="p-6 lg:p-8 bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-lg rounded-[2rem] border border-white/50 shadow-xl mb-8 relative overflow-hidden">
+                {/* Liquid background effects */}
+                <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 rounded-full blur-xl"></div>
+                  <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 rounded-full blur-xl"></div>
+                </div>
+                {/* Main content */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 relative z-10">
                 <button
                   onClick={() => handleCategoryClick("food")}
-                  className="category-food backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-food p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">🍔</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute -top-10 -left-10 w-24 h-24 rounded-full bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 relative z-10">🍔</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Food</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.food.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Food</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.food.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
                 
                 <button
                   onClick={() => handleCategoryClick("transport")}
-                  className="category-transport backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-transport p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">🚗</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br from-[#34BE82]/20 to-[#2F86A6]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute -bottom-10 -left-10 w-20 h-20 rounded-full bg-gradient-to-tr from-[#2F86A6]/10 to-[#34BE82]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 relative z-10">🚗</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Transport</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.transport.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Transport</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.transport.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
                 
                 <button
                   onClick={() => handleCategoryClick("utilities")}
-                  className="category-utilities backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-utilities p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">⚡</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute bottom-0 right-0 w-36 h-36 rounded-full bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute -top-5 -left-5 w-24 h-24 rounded-full bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 animate-bounce relative z-10">⚡</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Utilities</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.utilities.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Utilities</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.utilities.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
                 
                 <button
                   onClick={() => handleCategoryClick("entertainment")}
-                  className="category-entertainment backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-entertainment p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">🎬</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute -bottom-10 left-0 w-32 h-32 rounded-full bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 relative z-10">🎬</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Entertainment</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.entertainment.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Entertainment</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.entertainment.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
                 
                 <button
                   onClick={() => handleCategoryClick("shopping")}
-                  className="category-shopping backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-shopping p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">🛍️</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute top-0 left-0 w-36 h-36 rounded-full bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute -bottom-5 right-0 w-32 h-32 rounded-full bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 relative z-10">🛍️</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Shopping</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.shopping.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Shopping</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.shopping.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
                 
                 <button
                   onClick={() => handleCategoryClick("healthcare")}
-                  className="category-healthcare backdrop-blur-0 p-6 rounded-2xl border border-[#3341551a] text-center transition-all duration-300 transform relative overflow-hidden group"
+                  className="category-healthcare p-6 rounded-3xl border border-[#3341551a] text-center transform relative overflow-hidden group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 bg-gradient-to-br from-white via-white to-white/70 backdrop-blur-md"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:bg-white/20 transition-colors duration-300">
-                    <span className="text-2xl">🏥</span>
+                  {/* Liquid bubble effect */}
+                  <div className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full bg-gradient-to-br from-[#2F86A6]/20 to-[#34BE82]/20 group-hover:scale-150 transition-all duration-700 ease-in-out blur-md"></div>
+                  <div className="absolute -top-8 -left-8 w-36 h-36 rounded-full bg-gradient-to-tr from-[#34BE82]/10 to-[#2F86A6]/10 group-hover:scale-150 transition-all duration-500 ease-in-out blur-md delay-100"></div>
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3341551a] group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                    <span className="text-2xl group-hover:scale-125 transition-transform duration-500 relative z-10">🏥</span>
                   </div>
-                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-white transition-colors duration-300">Healthcare</h3>
-                  <p className="text-2xl font-black text-[#2F86A6] group-hover:text-white transition-colors duration-300">Rs. {categoryExpenses.healthcare.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
+                  <h3 className="text-[#0F172A] text-xl font-bold mb-2 tracking-wide group-hover:text-[#2F86A6] transition-colors duration-300 relative z-10">Healthcare</h3>
+                  <p className="text-xs text-[#334155] font-medium mb-1 transition-colors duration-300 relative z-10">{new Date().toLocaleString('default', { month: 'short' })}</p>
+                  <p className="text-2xl font-black text-[#2F86A6] relative z-10 group-hover:scale-110 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(47,134,166,0.5)]">Rs. {categoryExpenses.healthcare.toLocaleString("en-LK", { minimumFractionDigits: 2 })}</p>
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -399,22 +526,49 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentExpenses.map((expense, index) => (
-                        <ExpenseRow
-                          key={index}
-                          date={expense.date}
-                          name={expense.name}
-                          category={expense.category}
-                          amount={expense.amount}
-                          categoryColor={expense.categoryColor}
-                        />
-                      ))}
+                      {recentExpenses.length > 0 ? (
+                        recentExpenses
+                          .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending (most recent first)
+                          .slice(0, 15) // Show only latest 15
+                          .map((expense, index) => (
+                            <ExpenseRow
+                              key={index}
+                              date={expense.date}
+                              name={expense.name}
+                              category={expense.category}
+                              amount={expense.amount}
+                              categoryColor={expense.categoryColor}
+                            />
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="py-12 text-center text-[#64748B] font-medium">
+                            {userId ? "No expenses found. Add your first receipt!" : "Please sign in to view expenses"}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
           </div>
+
+          {recentExpenses.length > 15 && (
+            <div className="px-8 mb-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="py-6 text-center">
+                  <button
+                    className="text-[#2F86A6] font-bold underline hover:text-[#34BE82] transition-colors duration-200"
+                    onClick={() => router.push("/allExpenses")}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    See all expenses
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </>

@@ -8,6 +8,7 @@ async def get_receipts(user_id: str):
     """
     Fetch receipts for a user
     """
+    print(f"Fetching receipts for user_id: {user_id}")
     try:
         receipts = get_receipts_by_user(user_id=user_id)
         return {"receipts": receipts}
