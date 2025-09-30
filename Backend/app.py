@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from Maduni.routes import auth
 from Maduni.routes import document
 from Maduni.routes import receipt_rout
+from Maduni.routes import email_route
 
 
 app = FastAPI()
@@ -30,10 +31,14 @@ def read_root():
 
 app.include_router(auth.router, prefix="/auth", tags=["Firebase Auth"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
-app.include_router(document.router, prefix="/fetch", tags=["Fetch_receipts_invoices"])
+app.include_router(document.router, prefix="/fetch", tags=["Fetch receipts invoices"])
 app.include_router(receipt_rout.router, prefix="/get", tags=["Receipts"])
+
+app.include_router(email_route.router, prefix="/email", tags=["Send email"])
+
 app.include_router(receipt.router, prefix="/api", tags=["Save_receipt_data"])
 app.include_router(invoice.router, prefix="/api", tags=["Save_invoice_data"])
+
 
 
 
