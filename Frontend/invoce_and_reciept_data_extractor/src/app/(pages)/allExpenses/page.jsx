@@ -8,17 +8,17 @@ import { onAuthStateChanged } from "firebase/auth";
 const ExpenseRow = ({ date, name, category, amount, categoryColor }) => {
   return (
     <tr className="border-b border-[#3341551a] hover:bg-gradient-to-r hover:from-[#2F86A6]/5 hover:to-[#34BE82]/5 transition-all duration-300">
-      <td className="py-5 px-6 text-[#2F86A6] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{date}</td>
-      <td className="py-5 px-6 text-[#0F172A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{name}</td>
-      <td className="py-5 px-6">
+      <td className="py-3 sm:py-5 px-4 sm:px-6 text-[#2F86A6] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{date}</td>
+      <td className="py-3 sm:py-5 px-4 sm:px-6 text-[#0F172A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{name}</td>
+      <td className="py-3 sm:py-5 px-4 sm:px-6">
         <span
-          className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider ${categoryColor} border border-[#3341551a]`}
+          className={`px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs font-bold uppercase tracking-wider ${categoryColor} border border-[#3341551a]`}
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {category}
         </span>
       </td>
-      <td className="py-5 px-6 text-[#0F172A] font-black text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Rs. {amount}</td>
+      <td className="py-3 sm:py-5 px-4 sm:px-6 text-[#0F172A] font-black text-base sm:text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Rs. {amount}</td>
     </tr>
   );
 };
@@ -172,22 +172,22 @@ export default function AllExpenses() {
           <Navbar />
 
           {/* Header */}
-          <div className="pt-8 px-8">
+          <div className="pt-4 sm:pt-6 md:pt-8 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 sm:mb-6 md:mb-8">
                 <div>
-                  <h1 className="text-5xl md:text-6xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-4 tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-2 sm:mb-4 tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
                     All Expenses
                   </h1>
-                  <p className="text-xl text-[#334155] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <p className="text-lg sm:text-xl text-[#334155] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                     View and filter all your expenses by month.
                   </p>
                 </div>
 
                 {/* Back to Dashboard Button */}
-                <div className="mt-6 md:mt-0">
+                <div className="mt-4 sm:mt-6 md:mt-0">
                   <button
-                    className="bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] text-white font-bold px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-4 group transform hover:scale-105 border border-[#ffffff80]"
+                    className="bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] text-white font-bold px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2 sm:space-x-4 group transform hover:scale-105 border border-[#ffffff80]"
                     onClick={() => router.push("/dashboard")}
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
@@ -199,7 +199,7 @@ export default function AllExpenses() {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                    <span className="text-lg tracking-wide">Back to Dashboard</span>
+                    <span className="text-base sm:text-lg tracking-wide">Back to Dashboard</span>
                   </button>
                 </div>
               </div>
@@ -207,11 +207,11 @@ export default function AllExpenses() {
           </div>
 
           {/* Month Filter */}
-          <div className="px-8 mb-8">
+          <div className="px-4 md:px-8 mb-4 sm:mb-6 md:mb-8">
             <div className="max-w-7xl mx-auto">
-              <div className="bg-white/80 p-6 rounded-3xl border border-[#3341551a] shadow-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <h2 className="text-2xl font-bold text-[#0F172A] mb-4">Filter Expenses</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/80 p-4 sm:p-6 rounded-xl sm:rounded-3xl border border-[#3341551a] shadow-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3 sm:mb-4">Filter Expenses</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                   {/* Month selector */}
                   <div>
                     <label htmlFor="month-select" className="block text-sm font-medium text-[#334155] mb-2">
@@ -221,7 +221,7 @@ export default function AllExpenses() {
                       id="month-select"
                       value={selectedMonth}
                       onChange={handleMonthChange}
-                      className="w-full bg-white text-black border border-[#3341551a] rounded-xl py-3 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
+                      className="w-full bg-white text-black border border-[#3341551a] rounded-lg sm:rounded-xl py-2 sm:py-3 px-3 sm:px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
                     >
                       {monthNames.map((month, index) => (
                         <option key={month} value={index + 1}>
@@ -240,7 +240,7 @@ export default function AllExpenses() {
                       id="year-select"
                       value={selectedYear}
                       onChange={handleYearChange}
-                      className="w-full bg-white border text-black border-[#3341551a] rounded-xl py-3 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
+                      className="w-full bg-white border text-black border-[#3341551a] rounded-lg sm:rounded-xl py-2 sm:py-3 px-3 sm:px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
                     >
                       {years.map((year) => (
                         <option key={year} value={year}>
@@ -259,7 +259,7 @@ export default function AllExpenses() {
                       id="category-select"
                       value={selectedCategory}
                       onChange={handleCategoryChange}
-                      className="w-full bg-white text-black border border-[#3341551a] rounded-xl py-3 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
+                      className="w-full bg-white text-black border border-[#3341551a] rounded-lg sm:rounded-xl py-2 sm:py-3 px-3 sm:px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2F86A6] focus:border-transparent transition-all duration-300"
                     >
                       {categories.map((category) => (
                         <option key={category} value={category}>
@@ -274,18 +274,18 @@ export default function AllExpenses() {
           </div>
 
           {/* Expenses Table */}
-          <div className="px-8 pb-16">
+          <div className="px-2 sm:px-4 md:px-8 pb-8 sm:pb-12 md:pb-16">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl font-black text-[#0F172A] mb-8 tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] mb-4 sm:mb-6 md:mb-8 tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {selectedCategory !== 'All' ? selectedCategory : ''} Expenses - {monthNames[selectedMonth - 1]} {selectedYear}
               </h2>
               
               {loading ? (
-                <div className="bg-white/90 rounded-3xl border border-[#3341551a] p-12 shadow-xl flex justify-center">
-                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2F86A6]"></div>
+                <div className="bg-white/90 rounded-xl sm:rounded-3xl border border-[#3341551a] p-8 sm:p-12 shadow-xl flex justify-center">
+                  <div className="animate-spin rounded-full h-12 sm:h-16 w-12 sm:w-16 border-t-2 border-b-2 border-[#2F86A6]"></div>
                 </div>
               ) : error ? (
-                <div className="bg-white/90 rounded-3xl border border-[#3341551a] p-12 shadow-xl text-center">
+                <div className="bg-white/90 rounded-xl sm:rounded-3xl border border-[#3341551a] p-6 sm:p-12 shadow-xl text-center">
                   <p className="text-red-600 font-medium">{error}</p>
                   <button 
                     onClick={fetchExpenses}
@@ -295,9 +295,9 @@ export default function AllExpenses() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-white/90 rounded-3xl border border-[#3341551a] overflow-hidden shadow-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                <div className="bg-white/90 rounded-xl sm:rounded-3xl border border-[#3341551a] overflow-hidden shadow-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <div className="overflow-x-auto -mx-1 px-1">
+                    <table className="min-w-[500px] w-full">
                       <thead className="bg-gradient-to-r from-[#2F86A6]/10 to-[#34BE82]/10">
                         <tr>
                           <th className="py-6 px-6 text-left text-[#0F172A] font-black text-lg tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Date</th>
@@ -336,12 +336,12 @@ export default function AllExpenses() {
               
               {/* Summary Information */}
               {filteredExpenses.length > 0 && (
-                <div className="mt-8 bg-white/80 p-6 rounded-3xl border border-[#3341551a] shadow-xl">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-[#0F172A]">
+                <div className="mt-4 sm:mt-6 md:mt-8 bg-white/80 p-4 sm:p-6 rounded-xl sm:rounded-3xl border border-[#3341551a] shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
+                    <h3 className="text-lg sm:text-xl font-bold text-[#0F172A]">
                       Total {selectedCategory !== 'All' ? selectedCategory : ''} Expenses
                     </h3>
-                    <p className="text-2xl font-black text-[#2F86A6]">
+                    <p className="text-xl sm:text-2xl font-black text-[#2F86A6]">
                       Rs. {filteredExpenses
                         .reduce((sum, expense) => {
                           const amount = parseFloat(expense.amount.replace(/,/g, ''));
