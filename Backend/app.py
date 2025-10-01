@@ -3,8 +3,8 @@ import uvicorn
 from dotenv import load_dotenv
 
 from Janodi.routes import upload
-from Janodi.routes import receipt
-from Janodi.routes import invoice
+from Janodi.routes import receiptsave
+from Janodi.routes import invoicesave
 from core.config import db
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -38,8 +38,8 @@ app.include_router(user.router, prefix="/get", tags=["Users"])
 
 app.include_router(email_route.router, prefix="/email", tags=["Send email"])
 
-app.include_router(receipt.router, prefix="/api", tags=["Save_receipt_data"])
-app.include_router(invoice.router, prefix="/api", tags=["Save_invoice_data"])
+app.include_router(receiptsave.router, prefix="/api", tags=["Save_receipt_data"])
+app.include_router(invoicesave.router, prefix="/api", tags=["Save_invoice_data"])
 
 
 

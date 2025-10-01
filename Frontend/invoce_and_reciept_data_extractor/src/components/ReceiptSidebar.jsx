@@ -17,6 +17,37 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
   }, []);
   // Format displayed data for saving
   const getFormattedData = () => {
+    // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
+    const parseDateISO = (raw) => {
+      if (!raw) return '';
+      let s = String(raw).trim();
+      // Try native Date.parse first
+      const parsed = Date.parse(s);
+      if (!isNaN(parsed)) return new Date(parsed).toISOString();
+
+      // Try common formats: DD/MM/YYYY, D/M/YYYY, DD-MM-YYYY, MM/DD/YYYY with optional time
+      const dm = s.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2,4})(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?$/);
+      if (dm) {
+        let day = dm[1];
+        let month = dm[2];
+        let year = dm[3];
+        const timePart = dm[4] || '00:00';
+        if (year.length === 2) year = '20' + year;
+        let d = parseInt(day, 10);
+        let m = parseInt(month, 10);
+        // If month value > 12 and day <=12, swap (handles ambiguous MM/DD vs DD/MM)
+        if (m > 12 && d <= 12) {
+          [d, m] = [m, d];
+        }
+        // Build ISO-ish string in UTC
+        const isoStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${timePart}:00Z`;
+        const iso = Date.parse(isoStr);
+        if (!isNaN(iso)) return new Date(iso).toISOString();
+      }
+
+      // Fallback: return raw trimmed string
+      return s;
+    };
     // Format address (remove phone numbers, split into lines)
     const address = (data.Address || "")
       .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, "")
@@ -49,7 +80,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
 
     return {
       category: data.ExpenseType || '',
-      date: data.Date || '',
+      date: parseDateISO(data.Date || new Date()),
       items,
       order_id: data.OrderId || '',
       seller_address: address,
@@ -57,7 +88,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
       subtotal: formatPrice(data.Subtotal),
       tax: formatPrice(data.Tax),
       total_price: formatPrice(data.TotalPrice),
-      uploaded_date: new Date().toISOString(),
+      uploaded_date: new Date(),
       user_ref: userRef || data.user_ref || '',
     };
   };
