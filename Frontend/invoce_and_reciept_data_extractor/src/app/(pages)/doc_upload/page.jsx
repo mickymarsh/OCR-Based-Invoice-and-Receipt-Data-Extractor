@@ -57,6 +57,7 @@ export default function UploadPage() {
     setUploading(true);
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
+    console.log(formData);
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/upload', {

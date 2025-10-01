@@ -2,13 +2,14 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from ..services.firestore_service import save_receipt_to_firestore
+from datetime import datetime
 
 router = APIRouter()
 
 # Receipt data model
 class ReceiptData(BaseModel):
 	category: Optional[str]
-	date: Optional[str]
+	date: Optional[datetime]
 	items: Optional[list[dict]]
 	order_id: Optional[str]
 	seller_address: Optional[str]
@@ -16,7 +17,7 @@ class ReceiptData(BaseModel):
 	subtotal: Optional[float]
 	tax: Optional[float]
 	total_price: Optional[float]
-	uploaded_date: Optional[str]
+	uploaded_date: Optional[datetime]
 	user_ref: Optional[str]
 
 @router.post("/receipt")
