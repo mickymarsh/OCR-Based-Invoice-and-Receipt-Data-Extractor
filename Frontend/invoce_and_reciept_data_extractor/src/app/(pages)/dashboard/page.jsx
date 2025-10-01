@@ -91,7 +91,7 @@ const ExpenseRow = ({ date, name, category, amount, categoryColor }) => {
 };
 
 export default function Dashboard() {
-  const userName = "Maduni";
+  const [userName, setUserName] = useState("User");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -177,6 +177,28 @@ export default function Dashboard() {
 
     return () => unsubscribe();
   }, []);
+  
+  // ✅ Fetch user data when userId is available
+  useEffect(() => {
+    if (!userId) return;
+    
+    console.log("Fetching user data for:", userId);
+    fetch(`http://127.0.0.1:8000/get/user/${userId}`)
+      .then((res) => res.json())
+      .then((json) => {
+        console.log("Fetched user data:", json);
+        if (json.user && json.user.name) {
+          setUserName(json.user.name);
+          console.log("User name set to:", json.user.name);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching user data:", err);
+        // Fallback to default name if fetch fails
+        setUserName("User");
+        console.log("User name set to default: User");
+      });
+  }, [userId]);
 
   // ✅ Fetch receipts when userId is available
   useEffect(() => {
@@ -282,19 +304,19 @@ export default function Dashboard() {
           <Navbar />
 
           {/* Header */}
-          <div className="pt-8 px-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-                <div>
-                  <h1 className="text-5xl md:text-6xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-4 tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <div className="pt-6 px-6">
+                <div className="max-w-7xl mx-auto">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                  <div>
+                    <h1 className="text-4xl md:text-5xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-3 tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
                     Hi, {userName}!
-                  </h1>
-                  <p className="text-xl text-[#334155] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    </h1>
+                    <p className="text-lg text-[#334155] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                     Welcome to your expense dashboard. Track and manage your spending with style.
-                  </p>
-                </div>
+                    </p>
+                  </div>
 
-                {/* Add Receipt/Invoice Button */}
+                  {/* Add Receipt/Invoice Button */}
                 <div className="mt-6 md:mt-0">
                   <button
                     className="bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] text-white font-bold px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-4 group transform hover:scale-105 border border-[#ffffff80]"
