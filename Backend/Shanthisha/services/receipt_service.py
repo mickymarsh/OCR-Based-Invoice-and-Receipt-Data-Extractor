@@ -42,7 +42,7 @@ def get_receipts_by_user(user_id: str) -> List[ReceiptOut]:
     try:
         # Query receipts
         receipts_ref = get_receipt_collection(user_id=user_id).stream()
-
+        print(f"[DEBUG] Querying receipts for user_id: {receipts_ref}")
         result = []
         count = 0
         for doc in receipts_ref:
