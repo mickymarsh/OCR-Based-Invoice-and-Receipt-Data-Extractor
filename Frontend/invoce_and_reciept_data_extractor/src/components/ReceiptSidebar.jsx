@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { auth } from "../lib/firebase";
 
 const receiptFields = [
@@ -15,11 +15,80 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
       setUserRef(`/Users/${user.uid}`);
     }
   }, []);
+  
+  // Parse numeric price strings to a float, supporting both US (1,234.56) and European (1.234,56) styles
+  const parseNumericPrice = (val) => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return val;
+    let s = String(val).trim();
+    if (!s) return 0;
+    // Remove currency symbol placeholder '8' if present at start
+    s = s.replace(/^8(?=\d)/, '');
+    // Remove spaces
+    s = s.replace(/\s+/g, '');
+    // If string contains both dot and comma, assume:
+    // - If comma occurs after dot (like 1.234,56) -> European: remove dots, replace comma with dot
+    // - If dot occurs after comma (rare) -> treat accordingly
+    const hasDot = s.indexOf('.') !== -1;
+    const hasComma = s.indexOf(',') !== -1;
+    if (hasDot && hasComma) {
+      const lastDot = s.lastIndexOf('.');
+      const lastComma = s.lastIndexOf(',');
+      if (lastComma > lastDot) {
+        // European: remove dots (thousand sep), replace comma with dot
+        s = s.replace(/\./g, '').replace(/,/g, '.');
+      } else {
+        // US-ish: remove commas
+        s = s.replace(/,/g, '');
+      }
+    } else if (hasComma && !hasDot) {
+      // If only commas present, treat comma as decimal separator if there is only one comma
+      const commaCount = (s.match(/,/g) || []).length;
+      if (commaCount === 1) {
+        s = s.replace(/,/g, '.');
+      } else {
+        // multiple commas -> remove them (thousand separators)
+        s = s.replace(/,/g, '');
+      }
+    } else {
+      // only dot or only digits -> remove commas just in case
+      s = s.replace(/,/g, '');
+    }
+    // Remove any remaining non-digit, non-dot, non-minus
+    s = s.replace(/[^\d\.\-]/g, '');
+    // If multiple dots, collapse extras (keep first as decimal)
+    const parts = s.split('.');
+    if (parts.length > 2) {
+      s = parts.shift() + '.' + parts.join('');
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+
+  // Format a raw value to display as numeric string with 2 decimals (en-US style)
+  const formatNumber = (raw) => {
+    if (raw === undefined || raw === null || String(raw).trim() === '') return "";
+    const n = parseNumericPrice(raw);
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // Safely render field values (convert Date -> ISO, objects -> JSON, else string)
+  const renderFieldValue = (val) => {
+    if (val === undefined || val === null) return '';
+    if (val instanceof Date) return val.toISOString();
+    if (typeof val === 'object') {
+      try { return JSON.stringify(val); } catch (e) { return String(val); }
+    }
+    return String(val);
+  };
   // Format displayed data for saving
   const getFormattedData = () => {
     // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
     const parseDateISO = (raw) => {
-      if (!raw) return '';
+      // If it's already a Date object, return its ISO string
+      if (raw instanceof Date) return raw.toISOString();
+      // If falsy, return current time ISO
+      if (!raw) return new Date().toISOString();
       let s = String(raw).trim();
       // Try native Date.parse first
       const parsed = Date.parse(s);
@@ -45,8 +114,8 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
         if (!isNaN(iso)) return new Date(iso).toISOString();
       }
 
-      // Fallback: return raw trimmed string
-      return s;
+      // Final fallback: return current time in ISO format to ensure DB receives standard datetime
+      return new Date().toISOString();
     };
     // Format address (remove phone numbers, split into lines)
     const address = (data.Address || "")
@@ -56,12 +125,17 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
       .filter(Boolean)
       .join(", ");
 
-    // Format prices
+    // Format prices: return cleaned numeric string (keep dots and commas for parsing)
     const formatPrice = val => {
-      val = (val || "").trim().replace(/^8(?=\d)/, '$');
-      val = val.replace(/[^\d\$\.,]/g, "");
-      return val;
+      let s = (val || "").trim();
+      if (!s) return "";
+      // Replace leading '8' that stands in for '$'
+      s = s.replace(/^8(?=\d)/, '$');
+      // Remove letters and currency symbols except digits, dot, comma, minus
+      s = s.replace(/[^\d\.,\-]/g, "");
+      return s;
     };
+
 
     // Format items
     const items = (data.Item || "").split(/(?<=\d{2,})\s+/).map(line => {
@@ -85,10 +159,10 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
       order_id: data.OrderId || '',
       seller_address: address,
       seller_name: data.Title || '',
-      subtotal: formatPrice(data.Subtotal),
-      tax: formatPrice(data.Tax),
-      total_price: formatPrice(data.TotalPrice),
-      uploaded_date: new Date(),
+  subtotal: formatPrice(data.Subtotal),
+  tax: formatPrice(data.Tax),
+  total_price: formatPrice(data.TotalPrice),
+  uploaded_date: new Date().toISOString(),
       user_ref: userRef || data.user_ref || '',
     };
   };
@@ -96,12 +170,46 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
   // Show summary before saving
   const [showSummary, setShowSummary] = useState(false);
   const [lastSavedId, setLastSavedId] = useState("");
+  const [totalError, setTotalError] = useState("");
+  const totalInputRef = useRef(null);
+
+  // Check whether a total amount is present and looks numeric
+  const isTotalPresent = () => {
+    const raw = data.TotalPrice;
+    if (raw === undefined || raw === null) return false;
+    const s = String(raw).trim();
+    if (s === "") return false;
+    // Strip non-numeric characters except dot and minus
+    const num = parseFloat(s.replace(/[^\d\.\-]/g, ""));
+    return !isNaN(num);
+  };
+
+  // Attempt to show the confirm summary; if total is missing, switch to edit mode and focus total input
+  const attemptShowSummary = () => {
+    if (!isTotalPresent()) {
+      setTotalError('Total amount is missing or invalid. Please enter the total amount.');
+      if (!editing && typeof onEdit === 'function') {
+        onEdit();
+      }
+      // Focus the total input once editing UI is visible
+      setTimeout(() => {
+        try { totalInputRef.current && totalInputRef.current.focus && totalInputRef.current.focus(); } catch (e) {}
+      }, 50);
+      return;
+    }
+    setTotalError("");
+    setShowSummary(true);
+  };
   const handleSaveToDB = async () => {
     const formatted = getFormattedData();
-    // Convert subtotal, tax, total_price to float for backend
-    formatted.subtotal = parseFloat(formatted.subtotal) || 0;
-    formatted.tax = parseFloat(formatted.tax) || 0;
-    formatted.total_price = parseFloat(formatted.total_price) || 0;
+    // Convert subtotal, tax, total_price to float for backend (handle comma-as-decimal and symbols)
+    const toFloat = (v) => {
+      // Use parseNumericPrice which handles commas and dots
+      return parseNumericPrice(v);
+    };
+    formatted.subtotal = toFloat(formatted.subtotal);
+    formatted.tax = toFloat(formatted.tax);
+    formatted.total_price = toFloat(formatted.total_price);
     console.log("Saving formatted data:", formatted);
     try {
       const response = await fetch('http://127.0.0.1:8000/api/receipt', {
@@ -190,9 +298,32 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
         <div className="grid grid-cols-1 gap-4">
           {receiptFields.filter(f => f !== "Item").map(field => (
             <div key={field} className="mb-4">
-              <label className="block text-sm font-bold text-[#2F86A6]">{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
+              <label className="block text-sm font-bold text-[#2F86A6]">
+                {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {editing && field === 'TotalPrice' && (
+                  <span className="text-red-600 ml-1" aria-hidden="true">*</span>
+                )}
+              </label>
               {editing ? (
-                <input type="text" value={data[field] || ""} onChange={e => onDataChange(field, e.target.value)} className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold" />
+                // Make TotalPrice required in edit mode and show validation state
+                field === 'TotalPrice' ? (
+                  <div>
+                    <input
+                      ref={totalInputRef}
+                      type="text"
+                      value={data[field] || ""}
+                      onChange={e => { onDataChange(field, e.target.value); if (totalError) setTotalError(''); }}
+                      required
+                      aria-required="true"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold ${totalError ? 'border-red-500 ring-red-200' : 'border-[#2F86A6]/30'}`}
+                    />
+                    {totalError && (
+                      <div className="text-red-600 text-sm mt-1">{totalError}</div>
+                    )}
+                  </div>
+                ) : (
+                  <input type="text" value={data[field] || ""} onChange={e => onDataChange(field, e.target.value)} className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold" />
+                )
               ) : field === "Address" ? (
                 <div className="mt-1">
                   {/* Remove phone numbers and split address into rows */}
@@ -207,17 +338,10 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
                 </div>
               ) : (["TotalPrice", "Subtotal", "Tax"].includes(field)) ? (
                 <p className="mt-1 text-sm text-[#0F172A] font-semibold">
-                  {(() => {
-                    let val = data[field] || "";
-                    // Replace leading '8' with '$'
-                    val = val.trim().replace(/^8(?=\d)/, '$');
-                    // Remove all letters except $ and keep only numbers, dots, commas
-                    val = val.replace(/[^\d\$\.\,]/g, "");
-                    return val;
-                  })()}
+                  {formatNumber(data[field])}
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-[#0F172A] font-semibold">{data[field] || ""}</p>
+                <p className="mt-1 text-sm text-[#0F172A] font-semibold">{renderFieldValue(data[field])}</p>
               )}
             </div>
           ))}
@@ -228,7 +352,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
             <>
               <div className="flex gap-2 justify-between">
                 <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Edit</button>
-                <button onClick={() => setShowSummary(true)} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Receipt</button>
+                <button onClick={attemptShowSummary} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Receipt</button>
               </div>
             </>
           )}
@@ -236,7 +360,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
             {editing && (
               <div className="flex gap-2 justify-between">
                 <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Cancel</button>
-                <button onClick={() => setShowSummary(true)} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Changes</button>
+                <button onClick={attemptShowSummary} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Changes</button>
               </div>
             )}
           </div>
@@ -275,11 +399,11 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
                     ))}
                   </ul>
                   <div className="font-bold text-[#0F172A] mt-2 mb-1">Subtotal:</div>
-                  <div className="text-[#1e293b]">{getFormattedData().subtotal}</div>
+                  <div className="text-[#1e293b]">{formatNumber(getFormattedData().subtotal)}</div>
                   <div className="font-bold text-[#0F172A] mt-2 mb-1">Tax:</div>
-                  <div className="text-[#1e293b]">{getFormattedData().tax}</div>
+                  <div className="text-[#1e293b]">{formatNumber(getFormattedData().tax)}</div>
                   <div className="font-bold text-[#0F172A] mt-2 mb-1">Total Price:</div>
-                  <div className="text-[#1e293b]">{getFormattedData().total_price}</div>
+                  <div className="text-[#1e293b]">{formatNumber(getFormattedData().total_price)}</div>
                 </div>
                 <div className="flex gap-2 justify-end mt-2">
                   <button onClick={async () => { 
