@@ -8,11 +8,11 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_KEY_DOCS = os.getenv("GEMINI_KEY_DOCS")
 # NOTE: The endpoint below is a placeholder. If you have a real Gemini or LLM API endpoint,
 # replace this URL and the request payload/response parsing accordingly.
-GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://api.gemini.com/v1/classify")
-url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+GEMINI_FOR_DOCS = os.getenv("GEMINI_FOR_DOCS", "https://api.gemini.com/v1/classify")
+url = f"{GEMINI_FOR_DOCS}?key={GEMINI_KEY_DOCS}"
 
 
 
@@ -112,8 +112,8 @@ def _heuristic_classify(text: str) -> str:
 
 def classify_document(text: str) -> str:
     """Classify document using Gemini API, fallback to heuristic."""
-    if not GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY is not set, using local heuristic classifier")
+    if not GEMINI_KEY_DOCS:
+        logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic classifier")
         return _heuristic_classify(text)
 
     payload = {
