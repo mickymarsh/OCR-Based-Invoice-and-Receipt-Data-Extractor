@@ -192,7 +192,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
   tax: formatPrice(data.Tax),
   total_price: formatPrice(data.TotalPrice),
   uploaded_date: new Date().toISOString(),
-      user_ref: userRef || data.user_ref || '',
+      user_id: userRef || data.user_id || '',
     };
   };
 

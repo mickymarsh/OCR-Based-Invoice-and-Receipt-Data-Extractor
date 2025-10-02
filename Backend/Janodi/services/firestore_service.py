@@ -51,8 +51,8 @@ def save_receipt_to_firestore(receipt_data: dict) -> str:
     """
     # Convert user_ref string to a Firestore DocumentReference when possible
     try:
-        if isinstance(receipt_data, dict) and 'user_ref' in receipt_data and receipt_data['user_ref']:
-            val = receipt_data['user_ref']
+        if isinstance(receipt_data, dict) and 'user_id' in receipt_data and receipt_data['user_id']:
+            val = receipt_data['user_id']
             if isinstance(val, str):
                 s = val.strip()
                 if s.startswith('/'):
@@ -61,7 +61,7 @@ def save_receipt_to_firestore(receipt_data: dict) -> str:
                     path = f"Users/{s}"
                 else:
                     path = s
-                receipt_data['user_ref'] = db.document(path)
+                receipt_data['user_id'] = db.document(path)
     except Exception:
         # leave as-is on failure
         pass

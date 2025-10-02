@@ -18,7 +18,7 @@ class ReceiptData(BaseModel):
 	tax: Optional[float]
 	total_price: float
 	uploaded_date: Optional[datetime]
-	user_ref: Optional[str]
+	user_id: Optional[str]
 
 @router.post("/receipt")
 async def save_receipt(receipt: ReceiptData):

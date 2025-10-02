@@ -29,7 +29,7 @@ Content-Type: application/json
   "tax": 0,
   "total_price": 850,
   "uploaded_date": "28 September 2025 at 12:20:14 UTC+5:30",
-  "user_ref": "/Users/WaY6ClkdcLUjWs32fPoaNm4I6v53"
+  "user_id": "/Users/WaY6ClkdcLUjWs32fPoaNm4I6v53"
 }
 
 HTTP/1.1 200  - OK
@@ -38,8 +38,6 @@ server: uvicorn
 content-length: 48
 content-type: application/json
 connection: close
-###
-
 ###
 POST http://127.0.0.1:8000/api/invoice
 Content-Type: application/json
