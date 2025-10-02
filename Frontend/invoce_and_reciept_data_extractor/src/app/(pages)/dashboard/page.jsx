@@ -210,17 +210,17 @@ export default function Dashboard() {
         console.log("Fetched receipts:", json);
         if (json.receipts) {
           // Format receipts for the table
-          const formatted = json.receipts.map((r, index) => ({
+            const formatted = json.receipts.map((r, index) => ({
             date: new Date(r.date).toLocaleDateString("en-US", {
               year: "numeric",
               month: "2-digit",
               day: "2-digit",
             }),
-            name: `Expense ${index + 1}`, // Default name since backend doesn't provide names
+            name: r.seller_name || `Expense ${index + 1}`, // Use seller_name if available, fallback to default name
             category: r.category,
             amount: parseFloat(r.total_price).toLocaleString("en-LK", { minimumFractionDigits: 2 }),
             categoryColor: categoryColors[r.category] || "bg-gray-500/10 text-gray-700",
-          }));
+            }));
           setRecentExpenses(formatted);
         }
       })
