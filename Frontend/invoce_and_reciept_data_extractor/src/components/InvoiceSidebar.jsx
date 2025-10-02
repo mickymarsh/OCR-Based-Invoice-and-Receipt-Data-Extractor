@@ -8,38 +8,132 @@ const invoiceFields = [
 ];
 
 export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataChange, onClose, expenseType, expenseTypeDropdown }) {
-  const [showSummary, setShowSummary] = useState(false);
-  const [pendingSave, setPendingSave] = useState(false);
   // Save invoice data to backend
+  const [showSummary, setShowSummary] = useState(false);
   const [lastSavedId, setLastSavedId] = useState("");
+  const [requiredErrors, setRequiredErrors] = useState({});
+  const [pendingSave, setPendingSave] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
   const parseDateISO = (raw) => {
-    if (raw instanceof Date) return raw;
+    // Return an ISO 8601 string for any valid input, or empty string on failure.
+    if (raw instanceof Date) return raw.toISOString();
     if (!raw) return '';
     let s = String(raw).trim();
-    const parsed = Date.parse(s);
-    if (!isNaN(parsed)) return new Date(parsed);
-    const dm = s.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2,4})(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?$/);
-    if (dm) {
-      let day = dm[1];
-      let month = dm[2];
-      let year = dm[3];
-      const timePart = dm[4] || '00:00';
-      if (year.length === 2) year = '20' + year;
-      let d = parseInt(day, 10);
-      let m = parseInt(month, 10);
-      if (m > 12 && d <= 12) {
-        [d, m] = [m, d];
-      }
-      const isoStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${timePart}:00Z`;
-      const iso = Date.parse(isoStr);
-      if (!isNaN(iso)) return new Date(iso);
+    // Normalize common noise characters and non-breaking spaces
+    s = s.replace(/\u00A0/g, ' ').trim();
+    // Quick normalization: convert '*' to ':' (time separator) for easier parsing
+    const norm = s.replace(/\*/g, ':');
+
+    // Quick native parse first for standard formats
+    const parsed = Date.parse(norm);
+    if (!isNaN(parsed)) return new Date(parsed).toISOString();
+
+    // Explicit short form: 'DD-MM*HH' or 'DD/MM:HH' -> interpret as day-month-hour (current year)
+    const shortTime = norm.match(/^(\d{1,2})[\s\-._\/](\d{1,2})[:](\d{1,2})$/);
+    if (shortTime) {
+      const day = shortTime[1].padStart(2, '0');
+      const month = shortTime[2].padStart(2, '0');
+      const hour = shortTime[3].padStart(2, '0');
+      const yearNow = new Date().getFullYear();
+      const isoStr = `${yearNow}-${month}-${day}T${hour}:00:00Z`;
+      const parsedIso = Date.parse(isoStr);
+      if (!isNaN(parsedIso)) return new Date(parsedIso).toISOString();
     }
-    return s;
+
+    // Handle custom display format produced in UI: 'DD MM YY-HH*MM' or 'DD MM YYYY-HH*MM'
+    // Examples: '02 10 25-14*30' or '02 10 2025-14*30'
+    const custom = s.match(/^(\d{1,2})[\s\-._/](\d{1,2})[\s\-._/](\d{2,4})(?:[\s\-_:T]+(\d{1,2})\*?(\d{2}))?$/);
+    if (custom) {
+      let day = custom[1].padStart(2, '0');
+      let month = custom[2].padStart(2, '0');
+      let year = custom[3];
+      if (year.length === 2) year = '20' + year;
+      const hour = (custom[4] || '00').padStart(2, '0');
+      const minute = (custom[5] || '00').padStart(2, '0');
+      const isoStr = `${year}-${month}-${day}T${hour}:${minute}:00Z`;
+      const iso = Date.parse(isoStr);
+      if (!isNaN(iso)) return new Date(iso).toISOString();
+    }
+
+    // Try common separators like 'DD/MM/YYYY HH:MM' or 'MM-DD-YYYY HH:MM'
+    const alt = s.replace(/(\*)/g, ':').replace(/\s*-\s*/g, ' ').replace(/\*/g, ':');
+    const parsedAlt = Date.parse(alt);
+    if (!isNaN(parsedAlt)) return new Date(parsedAlt).toISOString();
+
+    // Last resort: attempt to extract groups of numbers and guess order
+    const nums = s.match(/\d{1,4}/g);
+    if (nums && nums.length >= 3) {
+      // If pattern looks like DD MM HH (e.g. '31-05*16'), interpret as day/month/hour in the current year
+      const n0 = parseInt(nums[0], 10);
+      const n1 = parseInt(nums[1], 10);
+      const n2 = parseInt(nums[2], 10);
+      if (nums.length === 3 && n2 <= 23) {
+        const yearNow = new Date().getFullYear();
+        const day = String(n0).padStart(2, '0');
+        const month = String(n1).padStart(2, '0');
+        const hour = String(n2).padStart(2, '0');
+        const isoGuess = `${yearNow}-${month}-${day}T${hour}:00:00Z`;
+        const isoG = Date.parse(isoGuess);
+        if (!isNaN(isoG)) return new Date(isoG).toISOString();
+      }
+
+      // Otherwise, try to locate a year-like token (4 digits or >31)
+      let yIdx = nums.findIndex(n => n.length === 4 || parseInt(n, 10) > 31);
+      let year = yIdx >= 0 ? nums[yIdx] : nums[2];
+      let d = nums[0];
+      let m = nums[1];
+      if (yIdx === 0) { // year first
+        year = nums[0]; d = nums[2]; m = nums[1];
+      }
+      if (year.length === 2) year = '20' + year;
+      const isoGuess2 = `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T00:00:00Z`;
+      const isoG2 = Date.parse(isoGuess2);
+      if (!isNaN(isoG2)) return new Date(isoG2).toISOString();
+    }
+
+    return '';
+  };
+
+  // Display helper: return a standardized ISO string or a readable fallback
+  const displayISO = (raw) => {
+    if (!raw) return '';
+    const iso = parseDateISO(raw);
+    if (iso) return iso; // already ISO string
+    // If parse failed but raw parses natively, return that ISO
+    const parsed = Date.parse(String(raw));
+    if (!isNaN(parsed)) return new Date(parsed).toISOString();
+    // Last resort: return original value
+    return String(raw);
+  };
+
+  // Helpers to convert between ISO and input[type=datetime-local] values
+  const isoToLocal = (iso) => {
+    if (!iso) return '';
+    const parsed = Date.parse(iso);
+    if (isNaN(parsed)) return '';
+    const d = new Date(parsed);
+    // build yyyy-MM-ddTHH:mm for datetime-local
+    const pad = n => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
+  const localToIso = (local) => {
+    if (!local) return '';
+    // local is like 'YYYY-MM-DDTHH:MM'
+    const parsed = Date.parse(local);
+    if (isNaN(parsed)) return '';
+    return new Date(parsed).toISOString();
   };
   // Save to DB after confirmation
   const handleSaveToDB = async () => {
+    setSaving(true);
     // Map frontend fields to backend expected fields
     const keyMap = {
       ExpenseType: "category",
@@ -58,24 +152,41 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
     const invoiceData = {};
     Object.entries(keyMap).forEach(([frontendKey, backendKey]) => {
       if (frontendKey === "sent_email") {
-        invoiceData[backendKey] = true;
-      } else if (frontendKey === "uploaded_date") {
+        invoiceData[backendKey] = false;
+        return;
+      }
+      if (frontendKey === "uploaded_date") {
         invoiceData[backendKey] = new Date().toISOString();
-      } else if (frontendKey === "user_id") {
+        return;
+      }
+      if (frontendKey === "user_id") {
         const auth = getAuth();
         const currentUser = auth.currentUser;
         invoiceData[backendKey] = (currentUser && currentUser.uid) ? `/User/${currentUser.uid}` : "";
-      } else if (frontendKey === "invoice_total") {
-        invoiceData[backendKey] = data[frontendKey] ? parseFloat(data[frontendKey]) || 0 : 0;
-      } else if (data[frontendKey] !== undefined) {
+        return;
+      }
+
+      // invoice_total: ensure numeric
+      if (frontendKey === "invoice_total") {
+        const raw = data[frontendKey] ?? '';
+        const num = parseFloat(String(raw).replace(/[^0-9.-]+/g, ''));
+        invoiceData[backendKey] = isNaN(num) ? 0 : num;
+        return;
+      }
+
+      if (data[frontendKey] !== undefined) {
         if (frontendKey === 'due_date') {
-          // If due_date empty, default to 5 days from now (ISO)
-          if (!data[frontendKey]) {
-            const fiveDays = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
-            invoiceData[backendKey] = fiveDays.toISOString();
-          } else {
-            invoiceData[backendKey] = parseDateISO(data[frontendKey]) || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+          // prefer parsed ISO from data (in case input used datetime-local -> localToIso)
+          let parsedIso = '';
+          if (typeof data[frontendKey] === 'string') {
+            parsedIso = parseDateISO(data[frontendKey]) || data[frontendKey];
           }
+          if (!parsedIso) {
+            // fallback to 5 days
+            const fiveDays = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+            parsedIso = fiveDays.toISOString();
+          }
+          invoiceData[backendKey] = parsedIso;
         } else {
           invoiceData[backendKey] = data[frontendKey];
         }
@@ -83,6 +194,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
     });
     console.log('invoce data',invoiceData);
     try {
+      console.log('sending invoice payload', invoiceData);
       const response = await fetch('http://127.0.0.1:8000/api/invoice', {
         method: 'POST',
         headers: {
@@ -91,35 +203,83 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
         body: JSON.stringify(invoiceData),
       });
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
+        // consider success if server returned OK; prefer doc_id when available
         if (result && result.doc_id) {
           setLastSavedId(result.doc_id);
-          alert('Invoice saved successfully!');
-          if (editing) {
-            onEdit(); // Exit editing mode after save
-          }
-        } else {
-          alert('Invoice saved, but no document ID returned.');
         }
+        alert('Invoice saved successfully!');
+        if (editing) {
+          onEdit(); // Exit editing mode after save
+        }
+        return true;
       } else {
-        alert('Failed to save invoice.');
+        const txt = await response.text().catch(() => '');
+        console.error('Save failed, status:', response.status, 'body:', txt);
+        alert('Failed to save invoice. Server responded with ' + response.status + '\n' + txt);
+        return false;
       }
     } catch (err) {
-      alert('Error saving invoice: ' + err);
+      console.error('Error during invoice save:', err);
+      alert('Error saving invoice: ' + (err.message || err));
+      return false;
+    } finally {
+      setSaving(false);
     }
   };
 
   // Show summary before saving
+  const validateRequired = () => {
+    const errs = {};
+    // due_date must parse to ISO
+    const due = data && data.due_date ? parseDateISO(data.due_date) : '';
+    if (!due) errs.due_date = 'Please provide a valid due date.';
+    // invoice_total must be a numeric float
+    const totalRaw = data && (data.invoice_total !== undefined) ? data.invoice_total : '';
+    const totalNum = parseFloat(String(totalRaw).replace(/,/g, ''));
+    if (totalRaw === '' || isNaN(totalNum)) errs.invoice_total = 'Please enter invoice total (number).';
+    setRequiredErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleShowSummary = () => {
+    // validate required fields first
+    const ok = validateRequired();
+    if (!ok) {
+      // Keep sidebar open and show inline errors
+      setShowSummary(false);
+      setPendingSave(false);
+      // focus first missing field if possible
+      const firstMissing = Object.keys(requiredErrors)[0] || Object.keys({}).length && Object.keys(requiredErrors)[0];
+      // we can't reliably focus without refs; user will see inline messages
+      return;
+    }
+    setRequiredErrors({});
     setShowSummary(true);
     setPendingSave(true);
   };
 
   // Confirm save from summary
   const handleConfirmSave = async () => {
-    setShowSummary(false);
+    // Re-validate before sending (in case fields changed while modal open)
+    const ok = validateRequired();
+    if (!ok) {
+      // keep modal open so user can fix errors
+      setShowSummary(true);
+      setPendingSave(false);
+      return;
+    }
+    // Attempt save and only close the modal on success
     setPendingSave(false);
-    await handleSaveToDB();
+    const success = await handleSaveToDB();
+    if (success) {
+      setShowSummary(false);
+      setPendingSave(false);
+    } else {
+      // Keep modal open for retry/fix
+      setShowSummary(true);
+      setPendingSave(false);
+    }
   };
 
   // Cancel save from summary
@@ -159,7 +319,17 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
             <div key={field} className="mb-4">
               <label className="block text-sm font-bold text-[#2F86A6]">{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
               {editing && !["invoice_date", "item_unit_price", "item_total_price", "item_description", "due_date", "customer_address"].includes(field) ? (
-                <input type="text" value={data[field] || ""} onChange={e => onDataChange(field, e.target.value)} className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold" />
+                (field === 'invoice_total') ? (
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={data[field] || ""}
+                    onChange={e => onDataChange(field, e.target.value)}
+                    className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                  />
+                ) : (
+                  <input type="text" value={data[field] || ""} onChange={e => onDataChange(field, e.target.value)} className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold" />
+                )
               ) : field === "customer_address" ? (
                 <div className="mt-1">
                   {/* Split address into lines for readability */}
@@ -170,44 +340,31 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
                     ))}
                 </div>
               ) : field === "due_date" ? (
-                <p className="mt-1 text-sm text-[#0F172A] font-semibold">
-                  {/* Format due_date to 'DD MM YY-HH*MM' if possible, else show as is */}
-                  {(() => {
-                    const raw = data[field] || "";
-                    const parsed = Date.parse(raw);
-                    if (!isNaN(parsed)) {
-                      const d = new Date(parsed);
-                      const pad = n => n.toString().padStart(2, '0');
-                      const day = pad(d.getDate());
-                      const month = pad(d.getMonth() + 1);
-                      const year = d.getFullYear().toString().slice(-2);
-                      const hour = pad(d.getHours());
-                      const min = pad(d.getMinutes());
-                      return `${day} ${month} ${year}-${hour}*${min}`;
-                    }
-                    return raw;
-                  })()}
-                </p>
+                // In edit mode show a datetime-local input (required); otherwise display ISO
+                editing ? (
+                  <div className="mt-1">
+                    <input
+                      required
+                      aria-required
+                      type="datetime-local"
+                      value={isoToLocal(displayISO(data[field]))}
+                      onChange={e => onDataChange(field, localToIso(e.target.value))}
+                      className="block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                    />
+                    {!data[field] && (
+                      <div className="text-red-600 text-sm mt-1">Due date is required</div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
+                )
               ) : field === "invoice_date" ? (
                 <p className="mt-1 text-sm text-[#0F172A] font-semibold">
-                  {/* Format invoice_date to ISO string, set time to 00:00 if not present */}
-                  {(() => {
-                    const raw = data[field] || "";
-                    if (!raw) return "";
-                    // Try to parse date, add time if missing
-                    let dateStr = raw.trim();
-                    // If dateStr has no time, add 00:00
-                    if (!/\d{1,2}:\d{2}/.test(dateStr)) {
-                      dateStr += " 00:00";
-                    }
-                    // Try to parse as MM/DD/YYYY HH:mm or DD/MM/YYYY HH:mm
-                    const parsed = Date.parse(dateStr);
-                    if (!isNaN(parsed)) {
-                      return new Date(parsed).toISOString();
-                    }
-                    return raw;
-                  })()}
+                  {/* Display invoice_date as standardized ISO (or fallback) */}
+                  {displayISO(data[field])}
                 </p>
+              ) : field === 'invoice_total' && requiredErrors.invoice_total ? (
+                <div className="text-red-600 text-sm mt-1">{requiredErrors.invoice_total}</div>
               ) : field === "item_total_price" || field === "item_unit_price" ? (
                 <div className="mt-1">
                   {/* Display as list, split by space or comma */}
@@ -261,7 +418,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
                   .map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="font-semibold text-[#2F86A6]">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                      <span className="text-[#0F172A]">{String(value)}</span>
+                      <span className="text-[#0F172A]">{(key === 'due_date' || key === 'invoice_date') ? displayISO(value) : String(value)}</span>
                     </div>
                   ))}
               </div>
