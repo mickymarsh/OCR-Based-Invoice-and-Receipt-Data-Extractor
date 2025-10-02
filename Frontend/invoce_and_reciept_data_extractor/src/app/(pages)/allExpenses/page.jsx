@@ -120,7 +120,6 @@ export default function AllExpenses() {
           amount: parseFloat(r.total_price).toLocaleString("en-LK", { minimumFractionDigits: 2 }),
           categoryColor: categoryColors[r.category] || "bg-gray-500/10 text-gray-700",
         }));
-        
         setExpenses(formatted);
         // Initially set filtered expenses to all expenses
         setFilteredExpenses(formatted);
