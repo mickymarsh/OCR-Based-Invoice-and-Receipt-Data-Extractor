@@ -288,7 +288,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
     setPendingSave(false);
   };
   const expenseTypes = [
-    "food", "transport", "utilities", "entertainment", "shopping", "healthcare", "other"
+    "Food", "Transport", "Utilities", "Entertainment", "Shopping", "Healthcare", "other"
   ];
   return (
     <aside className={`flex flex-col bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl shadow-lg transition-all duration-300 overflow-hidden ml-auto w-96 pointer-events-auto`}>
@@ -318,30 +318,9 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
           {invoiceFields.map(field => (
             <div key={field} className="mb-4">
               <label className="block text-sm font-bold text-[#2F86A6]">{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
-              {editing && !["invoice_date", "item_unit_price", "item_total_price", "item_description", "due_date", "customer_address"].includes(field) ? (
-                (field === 'invoice_total') ? (
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={data[field] || ""}
-                    onChange={e => onDataChange(field, e.target.value)}
-                    className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
-                  />
-                ) : (
-                  <input type="text" value={data[field] || ""} onChange={e => onDataChange(field, e.target.value)} className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold" />
-                )
-              ) : field === "customer_address" ? (
-                <div className="mt-1">
-                  {/* Split address into lines for readability */}
-                  {(data[field] || "")
-                    .split(/,\s*/)
-                    .map((part, idx) => (
-                      <div key={idx} className="text-[#0F172A] font-semibold">{part}</div>
-                    ))}
-                </div>
-              ) : field === "due_date" ? (
-                // In edit mode show a datetime-local input (required); otherwise display ISO
-                editing ? (
+              {editing ? (
+                // In editing mode: make every field editable. Use specialized inputs where helpful.
+                (field === 'due_date') ? (
                   <div className="mt-1">
                     <input
                       required
@@ -355,28 +334,83 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
                       <div className="text-red-600 text-sm mt-1">Due date is required</div>
                     )}
                   </div>
+                ) : (field === 'invoice_date') ? (
+                  <div className="mt-1">
+                    <input
+                      type="datetime-local"
+                      value={isoToLocal(displayISO(data[field]))}
+                      onChange={e => onDataChange(field, localToIso(e.target.value))}
+                      className="block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                    />
+                  </div>
+                ) : (field === 'invoice_total') ? (
+                  <div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={data[field] || ""}
+                      onChange={e => onDataChange(field, e.target.value)}
+                      className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                    />
+                    {requiredErrors.invoice_total && (
+                      <div className="text-red-600 text-sm mt-1">{requiredErrors.invoice_total}</div>
+                    )}
+                  </div>
+                ) : (field === 'customer_address') ? (
+                  <div>
+                    <textarea
+                      value={data[field] || ""}
+                      onChange={e => onDataChange(field, e.target.value)}
+                      rows={3}
+                      className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                    />
+                  </div>
+                ) : (field === 'item_description') ? (
+                  <div>
+                    <textarea
+                      value={data[field] || ""}
+                      onChange={e => onDataChange(field, e.target.value)}
+                      rows={2}
+                      className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                    />
+                  </div>
                 ) : (
-                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
+                  // Generic editable field (including item_unit_price, item_total_price, etc.)
+                  <input
+                    type="text"
+                    value={data[field] || ""}
+                    onChange={e => onDataChange(field, e.target.value)}
+                    className="mt-1 block w-full border-[#2F86A6]/30 rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold p-2"
+                  />
                 )
-              ) : field === "invoice_date" ? (
-                <p className="mt-1 text-sm text-[#0F172A] font-semibold">
-                  {/* Display invoice_date as standardized ISO (or fallback) */}
-                  {displayISO(data[field])}
-                </p>
-              ) : field === 'invoice_total' && requiredErrors.invoice_total ? (
-                <div className="text-red-600 text-sm mt-1">{requiredErrors.invoice_total}</div>
-              ) : field === "item_total_price" || field === "item_unit_price" ? (
-                <div className="mt-1">
-                  {/* Display as list, split by space or comma */}
-                  {(data[field] || "")
-                    .split(/[ ,]+/)
-                    .filter(Boolean)
-                    .map((part, idx) => (
-                      <div key={idx} className="text-[#0F172A] font-semibold">{part}</div>
-                    ))}
-                </div>
               ) : (
-                <p className="mt-1 text-sm text-[#0F172A] font-semibold">{data[field] || ""}</p>
+                // Non-edit display mode: keep previous rendering behavior
+                field === "customer_address" ? (
+                  <div className="mt-1">
+                    {/* Split address into lines for readability */}
+                    {(data[field] || "")
+                      .split(/,\s*/)
+                      .map((part, idx) => (
+                        <div key={idx} className="text-[#0F172A] font-semibold">{part}</div>
+                      ))}
+                  </div>
+                ) : field === "due_date" ? (
+                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
+                ) : field === "invoice_date" ? (
+                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
+                ) : field === "item_total_price" || field === "item_unit_price" ? (
+                  <div className="mt-1">
+                    {/* Display as list, split by space or comma */}
+                    {(data[field] || "")
+                      .split(/[ ,]+/)
+                      .filter(Boolean)
+                      .map((part, idx) => (
+                        <div key={idx} className="text-[#0F172A] font-semibold">{part}</div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{data[field] || ""}</p>
+                )
               )}
             </div>
           ))}

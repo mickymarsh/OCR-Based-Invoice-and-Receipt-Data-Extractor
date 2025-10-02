@@ -274,7 +274,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
     setShowSummary(false);
   };
   const expenseTypes = [
-    "food", "transport", "utilities", "entertainment", "shopping", "healthcare", "other"
+    "Food", "Transport", "Utilities", "Entertainment", "Shopping", "Healthcare", "other"
   ];
   return (
     <aside className={`flex flex-col bg-gradient-to-br from-[#2F86A6]/10 to-[#34BE82]/10 rounded-2xl shadow-lg transition-all duration-300 overflow-hidden ml-auto w-96 pointer-events-auto`}>
