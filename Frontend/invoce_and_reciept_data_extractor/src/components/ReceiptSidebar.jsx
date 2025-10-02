@@ -81,10 +81,38 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
     }
     return String(val);
   };
+  // Helpers to convert between ISO and input[type=datetime-local] values
+  const isoToLocal = (iso) => {
+    if (!iso) return '';
+    const parsed = Date.parse(iso);
+    if (isNaN(parsed)) return '';
+    const d = new Date(parsed);
+    const pad = n => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+  const localToIso = (local) => {
+    if (!local) return '';
+    const parsed = Date.parse(local);
+    if (isNaN(parsed)) return '';
+    return new Date(parsed).toISOString();
+  };
+  // Display helper: attempt to return ISO string for display/use in datetime-local
+  const displayISO = (raw) => {
+    if (!raw) return '';
+    if (raw instanceof Date) return raw.toISOString();
+    const parsed = Date.parse(String(raw));
+    if (!isNaN(parsed)) return new Date(parsed).toISOString();
+    return '';
+  };
   // Format displayed data for saving
   const getFormattedData = () => {
-    // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
-    const parseDateISO = (raw) => {
+  // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
+  const parseDateISO = (raw) => {
       // If it's already a Date object, return its ISO string
       if (raw instanceof Date) return raw.toISOString();
       // If falsy, return current time ISO
@@ -154,6 +182,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
 
     return {
       category: data.ExpenseType || '',
+      // Ensure date is an ISO datetime string
       date: parseDateISO(data.Date || new Date()),
       items,
       order_id: data.OrderId || '',
@@ -171,6 +200,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
   const [showSummary, setShowSummary] = useState(false);
   const [lastSavedId, setLastSavedId] = useState("");
   const [totalError, setTotalError] = useState("");
+  const [dateError, setDateError] = useState("");
   const totalInputRef = useRef(null);
 
   // Check whether a total amount is present and looks numeric
@@ -186,6 +216,14 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
 
   // Attempt to show the confirm summary; if total is missing, switch to edit mode and focus total input
   const attemptShowSummary = () => {
+    // Validate date presence
+    const dateRaw = data.Date;
+    if (!dateRaw || String(dateRaw).trim() === '') {
+      setDateError('Date is required. Please add date and time.');
+      if (!editing && typeof onEdit === 'function') onEdit();
+      return;
+    }
+    setDateError('');
     if (!isTotalPresent()) {
       setTotalError('Total amount is missing or invalid. Please enter the total amount.');
       if (!editing && typeof onEdit === 'function') {
@@ -305,8 +343,22 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
                 )}
               </label>
               {editing ? (
-                // Make TotalPrice required in edit mode and show validation state
-                field === 'TotalPrice' ? (
+                // Make Date a datetime-local input and TotalPrice required in edit mode
+                field === 'Date' ? (
+                  <div>
+                    <input
+                      type="datetime-local"
+                      value={isoToLocal(displayISO(data[field]))}
+                      onChange={e => { onDataChange(field, localToIso(e.target.value)); if (dateError) setDateError(''); }}
+                      required
+                      aria-required="true"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-[#2F86A6] focus:border-[#2F86A6] bg-[#2F86A6]/10 text-[#0F172A] font-bold ${dateError ? 'border-red-500 ring-red-200' : 'border-[#2F86A6]/30'}`}
+                    />
+                    {dateError && (
+                      <div className="text-red-600 text-sm mt-1">{dateError}</div>
+                    )}
+                  </div>
+                ) : field === 'TotalPrice' ? (
                   <div>
                     <input
                       ref={totalInputRef}
