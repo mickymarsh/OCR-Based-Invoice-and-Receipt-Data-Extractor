@@ -13,6 +13,7 @@ from Maduni.routes import document
 from Shanthisha.routes import receipt
 from Maduni.routes import email_route
 from Shanthisha.routes import user
+from Shanthisha.routes import chatbot
 
 
 app = FastAPI()
@@ -40,6 +41,9 @@ app.include_router(email_route.router, prefix="/email", tags=["Send email"])
 
 app.include_router(receipt.router, prefix="/api", tags=["Save_receipt_data"])
 app.include_router(invoice.router, prefix="/api", tags=["Save_invoice_data"])
+
+# Add the chatbot router
+app.include_router(chatbot.router, prefix="/chatbot", tags=["AI Chatbot"])
 
 
 

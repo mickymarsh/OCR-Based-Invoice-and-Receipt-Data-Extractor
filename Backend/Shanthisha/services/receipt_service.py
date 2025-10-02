@@ -51,7 +51,8 @@ def get_receipts_by_user(user_id: str) -> List[ReceiptOut]:
             result.append({
                 "category": data.get("category", ""),
                 "date": data.get("date"),
-                "total_price": float(data.get("total_price", 0))
+                "total_price": float(data.get("total_price", 0)),
+                "seller_name": data.get("seller_name", "")
             })
 
         if count == 0:

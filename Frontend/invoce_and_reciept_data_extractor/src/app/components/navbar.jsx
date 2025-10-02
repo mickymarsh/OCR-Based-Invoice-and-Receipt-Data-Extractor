@@ -43,6 +43,12 @@ const Navbar = () => {
             All Expenses
           </Link>
           <Link 
+            href="/chatbot" 
+            className="text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
+          >
+            AI Assistant
+          </Link>
+          <Link 
             href="/doc_upload" 
             className="text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
           >
@@ -107,6 +113,13 @@ const Navbar = () => {
             onClick={() => setMobileMenuOpen(false)}
           >
             All Expenses
+          </Link>
+          <Link 
+            href="/chatbot" 
+            className="px-4 py-2 text-gray-300 hover:text-white transition-colors duration-200 font-medium text-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            AI Assistant
           </Link>
           <Link 
             href="/doc_upload" 
