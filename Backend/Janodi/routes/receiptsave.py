@@ -16,7 +16,7 @@ class ReceiptData(BaseModel):
 	seller_name: Optional[str]
 	subtotal: Optional[float]
 	tax: Optional[float]
-	total_price: Optional[float]
+	total_price: float
 	uploaded_date: Optional[datetime]
 	user_ref: Optional[str]
 

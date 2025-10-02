@@ -10,7 +10,7 @@ import re
 logger = logging.getLogger(__name__)
 
 # Lazy-loaded globals
-_MODEL_ID = "Mickeymarsh02/layoutlmv3-yoloinvoice-ner-finetuned"
+_MODEL_ID = "Mickeymarsh02/layoutlmv3-multimodel-finetuned-invoices03"
 _processor = None
 _model = None
 _reader = None
@@ -19,18 +19,11 @@ _reader = None
 def _init_invoice_model():
     global _processor, _model, _reader
     if _processor is None or _model is None:
-        logger.info("Loading invoice processor/model: %s", _MODEL_ID)
-        # Support a per-model token if you have models across different accounts
-        hf_token = os.getenv("INVOICE_MODEL_TOKEN") or os.getenv("HUGGINGFACE_HUB_TOKEN")
-        # pass token when accessing gated/private repos
-        if hf_token:
-            logger.info("Using HF token from env to access invoice model (INVOICE_MODEL_TOKEN or HUGGINGFACE_HUB_TOKEN)")
-            _processor = AutoProcessor.from_pretrained(_MODEL_ID, use_auth_token=hf_token)
-            _model = AutoModelForTokenClassification.from_pretrained(_MODEL_ID, use_auth_token=hf_token)
-        else:
-            logger.info("No HF token found in INVOICE_MODEL_TOKEN or HUGGINGFACE_HUB_TOKEN; attempting anonymous access")
-            _processor = AutoProcessor.from_pretrained(_MODEL_ID)
-            _model = AutoModelForTokenClassification.from_pretrained(_MODEL_ID)
+        logger.info("Loading invoice processor/model: %s (anonymous access)", _MODEL_ID)
+        # New model does not require an HF token; load processor and model directly
+        _processor = AutoProcessor.from_pretrained(_MODEL_ID)
+        _model = AutoModelForTokenClassification.from_pretrained(_MODEL_ID)
+        # easyocr reader for text/box extraction (used to build text+boxes input)
         _reader = easyocr.Reader(['en'])
     return _processor, _model, _reader
 

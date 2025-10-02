@@ -12,6 +12,32 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
   const [pendingSave, setPendingSave] = useState(false);
   // Save invoice data to backend
   const [lastSavedId, setLastSavedId] = useState("");
+
+  // Helper: parse common date formats to ISO string (UTC). If parsing fails, return raw string.
+  const parseDateISO = (raw) => {
+    if (raw instanceof Date) return raw;
+    if (!raw) return '';
+    let s = String(raw).trim();
+    const parsed = Date.parse(s);
+    if (!isNaN(parsed)) return new Date(parsed);
+    const dm = s.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2,4})(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?$/);
+    if (dm) {
+      let day = dm[1];
+      let month = dm[2];
+      let year = dm[3];
+      const timePart = dm[4] || '00:00';
+      if (year.length === 2) year = '20' + year;
+      let d = parseInt(day, 10);
+      let m = parseInt(month, 10);
+      if (m > 12 && d <= 12) {
+        [d, m] = [m, d];
+      }
+      const isoStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${timePart}:00Z`;
+      const iso = Date.parse(isoStr);
+      if (!isNaN(iso)) return new Date(iso);
+    }
+    return s;
+  };
   // Save to DB after confirmation
   const handleSaveToDB = async () => {
     // Map frontend fields to backend expected fields
@@ -42,7 +68,17 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
       } else if (frontendKey === "invoice_total") {
         invoiceData[backendKey] = data[frontendKey] ? parseFloat(data[frontendKey]) || 0 : 0;
       } else if (data[frontendKey] !== undefined) {
-        invoiceData[backendKey] = data[frontendKey];
+        if (frontendKey === 'due_date') {
+          // If due_date empty, default to 5 days from now (ISO)
+          if (!data[frontendKey]) {
+            const fiveDays = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+            invoiceData[backendKey] = fiveDays.toISOString();
+          } else {
+            invoiceData[backendKey] = parseDateISO(data[frontendKey]) || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+          }
+        } else {
+          invoiceData[backendKey] = data[frontendKey];
+        }
       }
     });
     console.log('invoce data',invoiceData);

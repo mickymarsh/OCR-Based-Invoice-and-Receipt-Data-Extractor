@@ -11,14 +11,14 @@ class InvoiceData(BaseModel):
 	category: Optional[str]
 	customer_address: Optional[str]
 	customer_name: Optional[str]
-	due_date: Optional[str]  # Accept as string/timestamp
+	due_date: Optional[datetime]  # Accept as string/timestamp
 	invoice_number: Optional[str]
 	item: Optional[str]
 	seller_address: Optional[str]
 	seller_name: Optional[str]
 	sent_email: Optional[bool]
 	total_amount: Optional[float]
-	uploaded_date: Optional[str]  # System-generated ISO date string
+	uploaded_date: Optional[datetime]  # System-generated ISO date string
 	user_id: Optional[str]
 
 @router.post("/invoice")
