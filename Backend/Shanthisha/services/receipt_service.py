@@ -85,7 +85,7 @@ def get_receipts_by_month(user_id: str, month: int, year: int) -> List[ReceiptOu
             if date_str:
                 # Parse the date from the string format
                 date_obj = datetime.fromisoformat(date_str) if isinstance(date_str, str) else date_str
-                
+                date_obj = date_obj.replace(tzinfo=None)  # Normalize the datetime object to remove timezone differences
                 # Check if the receipt matches the requested month and year
                 if date_obj.month == month and date_obj.year == year:
                     filtered_count += 1
@@ -99,7 +99,6 @@ def get_receipts_by_month(user_id: str, month: int, year: int) -> List[ReceiptOu
         
         # Sort the result in descending order by date (most recent first)
         result.sort(key=lambda x: x["date"], reverse=True)
-        
         return result
     except Exception as e:
         print(f"[ERROR] Failed to fetch receipts for user '{user_id}' by month {month}/{year}: {str(e)}")
