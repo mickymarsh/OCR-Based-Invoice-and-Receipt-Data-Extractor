@@ -162,7 +162,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
       if (frontendKey === "user_id") {
         const auth = getAuth();
         const currentUser = auth.currentUser;
-        invoiceData[backendKey] = (currentUser && currentUser.uid) ? `/User/${currentUser.uid}` : "";
+        invoiceData[backendKey] = (currentUser && currentUser.uid) ? `/Users/${currentUser.uid}` : "";
         return;
       }
 
