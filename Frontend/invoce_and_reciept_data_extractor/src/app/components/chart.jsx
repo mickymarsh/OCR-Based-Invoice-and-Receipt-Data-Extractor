@@ -172,7 +172,7 @@ export default function ReceiptsCharts() {
               </div>
 
               {/* Chart */}
-              <div className="bg-white/90 rounded-3xl border border-[#3341551a] shadow-xl p-8 mb-8">
+              <div data-testid="receipts-chart" className="bg-white/90 rounded-3xl border border-[#3341551a] shadow-xl p-8 mb-8">
                 <div className="h-96 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={filteredData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
