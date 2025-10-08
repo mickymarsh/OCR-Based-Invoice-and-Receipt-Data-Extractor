@@ -1,13 +1,5 @@
 import Link from "next/link";
-
-const Footer = () => {
-  return (
-    <footer className="fixed bottom-0 left-0 right-0 text-center text-xs text-teal-900 bg-gradient-to-r from-blue-100 via-teal-100 to-cyan-100 py-2 border-t border-teal-200 z-10">
-      <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved.</p>
-      <p className="mt-1 text-teal-700">Secure authentication powered by Firebase</p>
-    </footer>
-  );
-};
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (

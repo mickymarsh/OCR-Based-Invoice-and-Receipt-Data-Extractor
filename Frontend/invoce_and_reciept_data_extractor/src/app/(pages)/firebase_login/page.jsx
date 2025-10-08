@@ -5,6 +5,7 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import Footer from "@/components/Footer";
 
 // Light ocean gradient background
 const AnimatedBackground = () => (
@@ -16,12 +17,7 @@ const AnimatedBackground = () => (
   </div>
 );
 
-const Footer = () => (
-  <footer className="fixed bottom-4 left-0 right-0 text-center text-xs text-gray-600">
-    <p>© {new Date().getFullYear()} Smart Invoice and Receipt Scanner. All rights reserved. </p>
-    <p className="mt-1">Secure authentication powered by Firebase</p>
-  </footer>
-);
+// Footer is now imported from @/components/Footer
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

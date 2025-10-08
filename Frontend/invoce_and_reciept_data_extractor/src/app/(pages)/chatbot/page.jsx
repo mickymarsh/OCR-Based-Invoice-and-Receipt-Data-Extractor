@@ -4,6 +4,7 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Navbar from "../../components/navbar";
+import Footer from "@/components/Footer";
 
 const ChatBubble = ({ message, isUser }) => {
   return (
@@ -301,6 +302,7 @@ export default function ChatbotPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import Chart from "../../components/chart"
 import Head from 'next/head';
+import Footer from "@/components/Footer";
 
 // Adding styles for liquid animations
 const liquidStyles = `
@@ -689,6 +690,9 @@ export default function Dashboard() {
           <ChatbotWidget userId={userId} />
         </div>
       </main>
+      
+        <Footer />
+      
     </>
   );
 }
@@ -975,6 +979,8 @@ const ChatbotWidget = ({ userId }) => {
           </div>
         )}
       </div>
+      
     </div>
+    
   );
 }
