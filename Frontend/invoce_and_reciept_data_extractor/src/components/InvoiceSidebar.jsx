@@ -8,6 +8,13 @@ const invoiceFields = [
 ];
 
 export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataChange, onClose, expenseType, expenseTypeDropdown }) {
+  // Helper: get the effective due date (due_date, or fallback to date, then invoice_date)
+  const getEffectiveDueDate = () => {
+    if (data.due_date && parseDateISO(data.due_date)) return data.due_date;
+    if (data.date && parseDateISO(data.date)) return data.date;
+    if (data.invoice_date && parseDateISO(data.invoice_date)) return data.invoice_date;
+    return data.due_date || data.date || data.invoice_date || '';
+  };
   // Save invoice data to backend
   const [showSummary, setShowSummary] = useState(false);
   const [lastSavedId, setLastSavedId] = useState("");
@@ -149,6 +156,8 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
       uploaded_date: "uploaded_date",
       user_id: "user_id"
     };
+    // Always patch due_date to the effective value before mapping
+    let patchedData = { ...data, due_date: getEffectiveDueDate() };
     const invoiceData = {};
     Object.entries(keyMap).forEach(([frontendKey, backendKey]) => {
       if (frontendKey === "sent_email") {
@@ -165,21 +174,19 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
         invoiceData[backendKey] = (currentUser && currentUser.uid) ? `/Users/${currentUser.uid}` : "";
         return;
       }
-
       // invoice_total: ensure numeric
       if (frontendKey === "invoice_total") {
-        const raw = data[frontendKey] ?? '';
+        const raw = patchedData[frontendKey] ?? '';
         const num = parseFloat(String(raw).replace(/[^0-9.-]+/g, ''));
         invoiceData[backendKey] = isNaN(num) ? 0 : num;
         return;
       }
-
-      if (data[frontendKey] !== undefined) {
+      if (patchedData[frontendKey] !== undefined) {
         if (frontendKey === 'due_date') {
-          // prefer parsed ISO from data (in case input used datetime-local -> localToIso)
+          // prefer parsed ISO from patchedData (in case input used datetime-local -> localToIso)
           let parsedIso = '';
-          if (typeof data[frontendKey] === 'string') {
-            parsedIso = parseDateISO(data[frontendKey]) || data[frontendKey];
+          if (typeof patchedData[frontendKey] === 'string') {
+            parsedIso = parseDateISO(patchedData[frontendKey]) || patchedData[frontendKey];
           }
           if (!parsedIso) {
             // fallback to 5 days
@@ -188,7 +195,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
           }
           invoiceData[backendKey] = parsedIso;
         } else {
-          invoiceData[backendKey] = data[frontendKey];
+          invoiceData[backendKey] = patchedData[frontendKey];
         }
       }
     });
@@ -230,16 +237,17 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
 
   // Show summary before saving
   const validateRequired = () => {
-    const errs = {};
-    // due_date must parse to ISO
-    const due = data && data.due_date ? parseDateISO(data.due_date) : '';
-    if (!due) errs.due_date = 'Please provide a valid due date.';
-    // invoice_total must be a numeric float
-    const totalRaw = data && (data.invoice_total !== undefined) ? data.invoice_total : '';
-    const totalNum = parseFloat(String(totalRaw).replace(/,/g, ''));
-    if (totalRaw === '' || isNaN(totalNum)) errs.invoice_total = 'Please enter invoice total (number).';
-    setRequiredErrors(errs);
-    return Object.keys(errs).length === 0;
+  const errs = {};
+  // due_date must parse to ISO (use effective value)
+  const effDue = getEffectiveDueDate();
+  const due = effDue ? parseDateISO(effDue) : '';
+  if (!due) errs.due_date = 'Please provide a valid due date.';
+  // invoice_total must be a numeric float
+  const totalRaw = data && (data.invoice_total !== undefined) ? data.invoice_total : '';
+  const totalNum = parseFloat(String(totalRaw).replace(/,/g, ''));
+  if (totalRaw === '' || isNaN(totalNum)) errs.invoice_total = 'Please enter invoice total (number).';
+  setRequiredErrors(errs);
+  return Object.keys(errs).length === 0;
   };
 
   const handleShowSummary = () => {
@@ -395,7 +403,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
                       ))}
                   </div>
                 ) : field === "due_date" ? (
-                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
+                  <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(getEffectiveDueDate())}</p>
                 ) : field === "invoice_date" ? (
                   <p className="mt-1 text-sm text-[#0F172A] font-semibold">{displayISO(data[field])}</p>
                 ) : field === "item_total_price" || field === "item_unit_price" ? (
@@ -432,7 +440,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
           {!lastSavedId && (
             <div className="flex gap-2">
               <button onClick={onEdit} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">{editing ? 'Cancel' : 'Edit'}</button>
-              <button onClick={handleShowSummary} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all">Save Invoice</button>
+              <button onClick={handleShowSummary} className="bg-gradient-to-br from-[#2F86A6] to-[#34BE82] text-white py-2 px-4 rounded-2xl font-bold hover:scale-105 transition-all" disabled={!getEffectiveDueDate()}>Save Invoice</button>
       {/* Summary Modal */}
       {showSummary && (
         
@@ -447,12 +455,17 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
             <div className="mb-4 flex-1 overflow-y-auto">
               <div className="font-bold text-[#34BE82] mb-2">Summary:</div>
               <div className="grid grid-cols-1 gap-2">
+                {/* Always show the effective due date in summary */}
+                <div className="flex justify-between">
+                  <span className="font-semibold text-[#2F86A6]">Due Date</span>
+                  <span className="text-[#0F172A]">{displayISO(getEffectiveDueDate())}</span>
+                </div>
                 {Object.entries(data)
-                  .filter(([key]) => !key.startsWith("model_label_") && key !== "DocumentType" && key !== "ExpenseType")
+                  .filter(([key]) => !key.startsWith("model_label_") && key !== "DocumentType" && key !== "ExpenseType" && key !== "due_date")
                   .map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="font-semibold text-[#2F86A6]">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                      <span className="text-[#0F172A]">{(key === 'due_date' || key === 'invoice_date') ? displayISO(value) : String(value)}</span>
+                      <span className="text-[#0F172A]">{key === 'invoice_date' ? displayISO(value) : String(value)}</span>
                     </div>
                   ))}
               </div>
