@@ -14,3 +14,6 @@ def get_invoice_collection(user_id):
     print(user_ref.path)
     return db.collection("Invoice").where("user_id", "==", user_ref)
 
+def get_expected_expense_collection():
+    return db.collection("ExpectedExpense")
+
