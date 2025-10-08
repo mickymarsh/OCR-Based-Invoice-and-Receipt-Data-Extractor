@@ -96,6 +96,7 @@ export default function Dashboard() {
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [userId, setUserId] = useState(null);
   const [expectedExpenses, setExpectedExpenses] = useState(45000.0);
+  const [clusterInfo, setClusterInfo] = useState({ cluster_id: null, loading: true });
   const router = useRouter();
   
   // Add dynamic liquid animation styles
@@ -191,6 +192,9 @@ export default function Dashboard() {
           setUserName(json.user.name);
           console.log("User name set to:", json.user.name);
         }
+        
+        // Fetch user's cluster ID
+        fetchUserClusterId(userId);
       })
       .catch((err) => {
         console.error("Error fetching user data:", err);
@@ -199,6 +203,85 @@ export default function Dashboard() {
         console.log("User name set to default: User");
       });
   }, [userId]);
+  
+  // Fetch the user's cluster ID
+  const fetchUserClusterId = async (userId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/get/user/cluster/${userId}`);
+      const data = await response.json();
+      
+      if (data.cluster_id !== undefined) {
+        setClusterInfo({ 
+          cluster_id: data.cluster_id, 
+          loading: false 
+        });
+        
+        // After getting the cluster ID, fetch expected expenses
+        fetchExpectedExpenses(data.cluster_id);
+      } else {
+        console.error("Cluster ID not found for user");
+        setClusterInfo({ cluster_id: null, loading: false });
+      }
+    } catch (error) {
+      console.error("Error fetching user's cluster ID:", error);
+      setClusterInfo({ cluster_id: null, loading: false });
+    }
+  };
+  
+  // Fetch the expected expenses based on cluster ID
+  const fetchExpectedExpenses = async (clusterId) => {
+    try {
+      // Get current date info
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-based (0 = January)
+      
+      // Create array of the previous 3 months
+      const previousMonths = [];
+      for (let i = 1; i <= 3; i++) {
+        const previousDate = new Date(currentYear, currentMonth - i, 1);
+        const month = previousDate.toLocaleString('default', { month: 'long' });
+        const year = previousDate.getFullYear().toString();
+        previousMonths.push({ month, year });
+      }
+      
+      console.log("Fetching expected expenses for previous months:", previousMonths);
+      
+      // Fetch expected expenses for the last 3 months with the same cluster ID
+      const response = await fetch(`http://127.0.0.1:8000/get/expected_expenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cluster_id: clusterId,
+          months: previousMonths.map(m => m.month),
+          years: previousMonths.map(m => m.year),
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("Fetched expected expenses data:", data);
+      
+      if (data.expenses && data.expenses.length > 0) {
+        // Calculate average of last 3 months
+        const totalExpense = data.expenses.reduce((sum, expense) => sum + expense.expected_expense, 0);
+        const avgExpense = totalExpense / data.expenses.length;
+        
+        // Add 4% to the average
+        const projectedExpense = avgExpense * 1.04;
+        
+        console.log(`Average expense: ${avgExpense}, Projected (with 4% increase): ${projectedExpense}`);
+        
+        // Update the expected expense state
+        setExpectedExpenses(projectedExpense);
+      } else {
+        console.log("No expected expense data found, keeping default value");
+      }
+    } catch (error) {
+      console.error("Error fetching expected expenses:", error);
+    }
+  };
 
   // ✅ Fetch receipts when userId is available
   useEffect(() => {
@@ -357,13 +440,23 @@ export default function Dashboard() {
 
                   {/* Expected Expenses */}
                   <div className="space-y-4">
-                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>Expected Expenses</h2>
+                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide flex items-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Expected Expenses
+                      {clusterInfo.loading && (
+                        <div className="ml-3 inline-block">
+                          <div className="w-5 h-5 border-2 border-t-[#2F86A6] border-r-[#34BE82] border-b-[#2FDD92] border-l-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </h2>
                     <p className="text-5xl font-black text-transparent bg-gradient-to-r from-[#34BE82] to-[#2FDD92] bg-clip-text" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Rs. {expectedExpenses.toLocaleString("en-LK", { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex items-center space-x-6">
                       <p className="text-[#34BE82] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
                         {new Date().toLocaleString('default', { month: 'long' })} budget
+                        {clusterInfo.cluster_id !== null && (
+                          <span className="ml-2 text-xs text-[#64748B]">(based on similar users)</span>
+                        )}
                       </p>
                       <div className="flex items-center space-x-3">
                         <div className="w-20 h-3 bg-[#E5E7EB] rounded-full overflow-hidden border border-[#3341551a]">
