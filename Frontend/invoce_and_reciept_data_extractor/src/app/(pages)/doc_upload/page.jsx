@@ -5,6 +5,7 @@ import InvoiceSidebar from '../../../components/InvoiceSidebar';
 import ReceiptSidebar from '../../../components/ReceiptSidebar';
 import Header from '../../../components/Header';
 import InstructionsSidebar from '../../../components/InstructionsSidebar';
+import Footer from '@/components/Footer';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -289,6 +290,7 @@ export default function UploadPage() {
           />
         )}
       </div>
+      <Footer />
     </div>
   );
 }
