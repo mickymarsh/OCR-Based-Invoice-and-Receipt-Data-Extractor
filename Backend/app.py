@@ -14,6 +14,7 @@ from Shanthisha.routes import receipt
 from Maduni.routes import email_route
 from Shanthisha.routes import user
 from Shanthisha.routes import chatbot
+from Shanthisha.routes import cluster
 
 
 app = FastAPI()
@@ -45,6 +46,8 @@ app.include_router(invoicesave.router, prefix="/api", tags=["Save_invoice_data"]
 # Add the chatbot router
 app.include_router(chatbot.router, prefix="/chatbot", tags=["AI Chatbot"])
 
+# Add the cluster prediction router
+app.include_router(cluster.router, prefix="/user", tags=["Cluster Prediction"])
 
 
 
