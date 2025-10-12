@@ -110,74 +110,74 @@ def _heuristic_classify(text: str) -> str:
     return "unknown"
 
 
-def classify_document(text: str) -> str:
-    """Classify document using Gemini API, fallback to heuristic."""
-    if not GEMINI_KEY_DOCS:
-        logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic classifier")
-        return _heuristic_classify(text)
-
-    payload = {
-        "contents": [{
-            "parts": [{
-                "text": f"""
+def classify_document(text: str) -> dict:
+    """LangGraph-style: first classify doc type, then expense type if needed. Returns dict."""
+    def gemini_doc_type_agent(text: str) -> str:
+        if not GEMINI_KEY_DOCS:
+            logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic classifier")
+            return _heuristic_classify(text)
+        prompt = f"""
 Classify the following document text as exactly one of: receipt, invoice, or unknown.
-
-Additionally, for both receipts and invoices, predict the expense type from the following categories: food, transport, utilities, entertainment, shopping, healthcare. Use the row word set (item names, descriptions, etc.) to help determine the type. If multiple types are present, choose the most relevant or dominant one.
-
-Expense Type Rules:
-- Food: If the row word set contains any food or dish name (from any cuisine or country), classify expense_type as 'food'. Use your knowledge of global food names, ingredients, and dishes. This includes sushi, pizza, pasta, curry, tacos, burgers, ramen, sashimi, and any other food or drink item.
-- Transport: If the row word set contains transport-related terms (bus, taxi, train, flight, fare, ticket, ride, etc.), classify as 'transport'.
-- Utilities: If the row word set contains utility-related terms (electricity, water, gas, internet, bill, etc.), classify as 'utilities'.
-- Entertainment: If the row word set contains entertainment-related terms (movie, concert, show, ticket, event, etc.), classify as 'entertainment'.
-- Shopping: If the row word set contains product names, brands, or shopping-related terms (clothes, electronics, shoes, store, mall, etc.), classify as 'shopping'.
-- Healthcare: If the row word set contains healthcare-related terms (medicine, doctor, hospital, pharmacy, clinic, etc.), classify as 'healthcare'.
-- If you cannot determine, but there are item names that resemble any category above, infer the most likely category. Never return 'unknown' for expense_type if you can reasonably infer a category from item names, even if noisy or misspelled.
-
-Document Type Rules:
-- Receipt: If the text contains features like a business/shop name, phone number, list of items (food, products, etc.), and prices—even if noisy or misspelled—classify as receipt. Also classify as receipt if you see Subtotal/Tax/Total, date, payment method (cash/card/order id), or 'Thank you'.
-- Invoice: Contains 'INVOICE', 'BILL TO', 'AMOUNT DUE', 'DUE UPON RECEIPT', invoice number, payment terms, or tax rate.
-- Unknown: If neither clearly matches.
-
-Return a JSON object with two fields:
-{{
-    "document_type": "receipt" | "invoice" | "unknown",
-    "expense_type": "food" | "transport" | "utilities" | "entertainment" | "shopping" | "healthcare" | "unknown"
-}}
 
 Text:
 {text}
+
+Return only one word: receipt, invoice, or unknown.
 """
-            }]
-        }]
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=30)
-        resp.raise_for_status()
-    except requests.RequestException as exc:
-        logger.error("Gemini API call failed (%s). Falling back to heuristic. URL=%s", exc, url)
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        headers = {"Content-Type": "application/json"}
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            candidates = data.get("candidates", [])
+            if candidates:
+                txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
+                if "receipt" in txt:
+                    return "receipt"
+                if "invoice" in txt:
+                    return "invoice"
+                if "unknown" in txt:
+                    return "unknown"
+        except Exception as e:
+            logger.error("Gemini doc_type agent failed: %s", e)
+            return _heuristic_classify(text)
         return _heuristic_classify(text)
 
-    try:
-        data = resp.json()
-    except ValueError:
-        logger.error("Gemini API returned non-json response. Falling back to heuristic.")
+    def gemini_expense_type_agent(text: str) -> str:
+        if not GEMINI_KEY_DOCS:
+            logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic classifier")
+            return _heuristic_classify(text)
+        prompt = f"""
+Given the following document text, classify the expense type as one of: food, transport, utilities, entertainment, shopping, healthcare, or unknown.
+
+Text:
+{text}
+
+Return only one word: food, transport, utilities, entertainment, shopping, healthcare, or unknown.
+"""
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        headers = {"Content-Type": "application/json"}
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            candidates = data.get("candidates", [])
+            if candidates:
+                txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
+                for cat in ["food", "transport", "utilities", "entertainment", "shopping", "healthcare"]:
+                    if cat in txt:
+                        return cat
+                if "unknown" in txt:
+                    return "unknown"
+        except Exception as e:
+            logger.error("Gemini expense_type agent failed: %s", e)
+            return _heuristic_classify(text)
         return _heuristic_classify(text)
 
-    # Parse Gemini response
-    try:
-        candidates = data.get("candidates", [])
-        if candidates:
-            txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
-            if "receipt" in txt:
-                return "receipt"
-            if "invoice" in txt:
-                return "invoice"
-            if "unknown" in txt:
-                return "unknown"
-    except Exception:
-        pass
-
-    return _heuristic_classify(text)
+    doc_type = gemini_doc_type_agent(text)
+    if doc_type in ("receipt", "invoice"):
+        expense_type = gemini_expense_type_agent(text)
+    else:
+        expense_type = "unknown"
+    return {"document_type": doc_type, "expense_type": expense_type}

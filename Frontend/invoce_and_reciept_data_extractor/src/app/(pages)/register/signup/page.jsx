@@ -4,6 +4,7 @@ import { useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
+// import Footer from "@/components/Footer";
 
 // Animated Background Component
 const AnimatedBackground = () => {
@@ -243,7 +244,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default function SignupFormPage() {
     name: "",
     gender: "",
     marital_status: "",
-    home_town: "",
+    home_town: "", // used as location_type for the model
     birthday: "",
     education_level: "",
     car_ownership: "",
@@ -44,11 +44,13 @@ export default function SignupFormPage() {
     monthly_salary: "",
     average_expenses_per_month: "",
     average_expenses_per_year: "",
-    family_member_count: "",
+    family_member_count: "", // used as num_children for the model
     email: "",
     exercise_frequency: "",
   });
   
+  const [clusterPredicted, setClusterPredicted] = useState(false);
+  const [clusterId, setClusterId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -57,6 +59,64 @@ export default function SignupFormPage() {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Function to calculate age from birthday
+  const calculateAge = (birthday) => {
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Function to predict cluster ID
+  const predictClusterId = async (user, formData) => {
+    try {
+      const idToken = await user.getIdToken();
+      
+      // Extract features needed for model prediction
+      const predictionData = {
+        gender: formData.gender,
+        age: formData.birthday ? calculateAge(formData.birthday) : 30, // default age if not provided
+        income: parseInt(formData.monthly_salary) || 0,
+        education_level: formData.education_level,
+        occupation: formData.occupation,
+        marital_status: formData.marital_status,
+        num_children: parseInt(formData.family_member_count) || 0,
+        location_type: formData.home_town, // using home_town as location_type
+        exercise_frequency: formData.exercise_frequency,
+        car_ownership: formData.car_ownership.toLowerCase() === "yes" ? 1 : 0,
+      };
+      
+      console.log("Prediction data:", predictionData);
+      
+      const response = await fetch("http://127.0.0.1:8000/user/predict-cluster", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(predictionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Prediction failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log("Prediction result:", result);
+      
+      // Return the predicted cluster ID
+      return result.cluster_id;
+    } catch (error) {
+      console.error("Prediction error:", error);
+      // Return null if prediction fails
+      return null;
+    }
   };
 
   const handleSubmit = async () => {
@@ -75,7 +135,15 @@ export default function SignupFormPage() {
       const birthdayDate = new Date(formData.birthday);
       const birthdayISO = birthdayDate.toISOString();
       const signupAt = new Date().toISOString();
-
+      
+      // Predict cluster ID
+      const predictedClusterId = await predictClusterId(user, formData);
+      
+      // Set state with prediction results
+      setClusterPredicted(true);
+      setClusterId(predictedClusterId);
+      
+      // Prepare user data with predicted cluster ID
       const requestData = {
         uid: user.uid,
         signup_at: signupAt,
@@ -93,7 +161,7 @@ export default function SignupFormPage() {
         family_member_count: parseInt(formData.family_member_count),
         email: formData.email || user.email,
         exercise_frequency: formData.exercise_frequency,
-        cluster_id: null
+        cluster_id: predictedClusterId
       };
 
       const response = await fetch("http://127.0.0.1:8000/auth/setup-profile", {
@@ -396,6 +464,30 @@ export default function SignupFormPage() {
             )}
           </button>
         </div>
+
+        {/* Cluster Prediction Result */}
+        {clusterPredicted && clusterId !== null && (
+          <div className="mt-6 pt-4 border-t border-teal-300">
+            <div className="bg-gradient-to-r from-blue-50 to-teal-50 p-4 rounded-xl border border-teal-200">
+              <h3 className="font-semibold text-lg text-teal-600 mb-2">
+                <span className="flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Customer Segment Analysis
+                </span>
+              </h3>
+              <p className="text-gray-700 mb-2">
+                Based on your profile information, you've been identified as part of <span className="font-semibold text-blue-600">Customer Cluster {clusterId}</span>
+              </p>
+              <div className="flex items-center mt-3">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="h-2.5 rounded-full bg-gradient-to-r from-teal-500 to-blue-500" style={{ width: `${(clusterId+1) * 20}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step Progress Indicator */}
         <div className="mt-8 pt-6 border-t border-gray-700/50">

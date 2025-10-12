@@ -14,10 +14,14 @@ from Shanthisha.routes import receipt
 from Maduni.routes import email_route
 from Shanthisha.routes import user
 from Shanthisha.routes import chatbot
+
 from Maduni.routes import test_auth_router
 from Maduni.routes import auth_signup
 
 
+
+
+from Shanthisha.routes import cluster
 
 
 
@@ -50,9 +54,13 @@ app.include_router(invoicesave.router, prefix="/api", tags=["Save_invoice_data"]
 # Add the chatbot router
 app.include_router(chatbot.router, prefix="/chatbot", tags=["AI Chatbot"])
 
+
 app.include_router(test_auth_router.router, prefix="/test", tags=["Firebase Auth Test"])
 app.include_router(auth_signup.router, prefix="/auth", tags=["Firebase Auth Test"])
 
+
+# Add the cluster prediction router
+app.include_router(cluster.router, prefix="/user", tags=["Cluster Prediction"])
 
 
 

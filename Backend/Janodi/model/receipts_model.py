@@ -9,7 +9,7 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 # Lazy-loaded globals to avoid heavy work on module import
-_MODEL_NAME = "janodis/layoutlmv3-finetuned-receipts"
+_MODEL_NAME = "janodis/layoutlmv3-refinetuned-receipts"
 _processor = None
 _model = None
 _id2label = None

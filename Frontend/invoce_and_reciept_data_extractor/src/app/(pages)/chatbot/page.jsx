@@ -4,12 +4,13 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Navbar from "../../components/navbar";
+import Footer from "@/components/Footer";
 
 const ChatBubble = ({ message, isUser }) => {
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3 sm:mb-4`}>
       <div
-        className={`p-4 rounded-2xl max-w-[80%] ${
+        className={`p-3 sm:p-4 rounded-2xl max-w-[85%] sm:max-w-[80%] text-sm sm:text-base ${
           isUser
             ? "bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white"
             : "bg-white/80 border border-[#3341551a] text-[#0F172A]"
@@ -23,14 +24,14 @@ const ChatBubble = ({ message, isUser }) => {
             
             {/* Display suggestions if available */}
             {message.suggestions && message.suggestions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[#3341551a]">
-                <p className="text-sm font-medium mb-2 text-[#2F86A6]">Try asking:</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-[#3341551a]">
+                <p className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[#2F86A6]">Try asking:</p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {message.suggestions.map((suggestion, idx) => (
                     <button
                       key={idx}
                       onClick={() => window.dispatchEvent(new CustomEvent('suggest', { detail: suggestion }))}
-                      className="text-xs bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 rounded-full transition-colors"
+                      className="text-[10px] sm:text-xs bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 rounded-full transition-colors"
                     >
                       {suggestion}
                     </button>
@@ -41,7 +42,7 @@ const ChatBubble = ({ message, isUser }) => {
             
             {/* Show extracted category and month if available */}
             {message.extracted_details && (
-              <div className="mt-3 text-xs text-[#64748B] italic">
+              <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-[#64748B] italic">
                 {message.extracted_details.category && (
                   <span className="mr-2">
                     Category: <span className="font-medium">{message.extracted_details.category}</span>
@@ -196,36 +197,36 @@ export default function ChatbotPage() {
     <main className="min-h-screen bg-gradient-to-br from-[#F5F7FA] to-white">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <h1 className="text-5xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-2 tracking-tight">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-5xl">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-gradient-to-r from-[#2F86A6] via-[#34BE82] to-[#2FDD92] bg-clip-text mb-2 tracking-tight">
           Expense Assistant
         </h1>
-        <p className="text-lg text-[#334155] font-medium mb-2">
+        <p className="text-base sm:text-lg text-[#334155] font-medium mb-2">
           Ask questions about your expenses and get insights
         </p>
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
           <button 
             onClick={() => setInputValue("How much did I spend on food this month?")}
-            className="text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-3 rounded-full transition-colors"
+            className="text-xs sm:text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 sm:px-3 rounded-full transition-colors"
           >
             Food expenses
           </button>
           <button 
             onClick={() => setInputValue("Show my transport costs this month")}
-            className="text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-3 rounded-full transition-colors"
+            className="text-xs sm:text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 sm:px-3 rounded-full transition-colors"
           >
             Transport costs
           </button>
           <button 
             onClick={() => setInputValue("What were my biggest expenses this month?")}
-            className="text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-3 rounded-full transition-colors"
+            className="text-xs sm:text-sm bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 sm:px-3 rounded-full transition-colors"
           >
             Biggest expenses
           </button>
         </div>
         
         {/* Chat container */}
-        <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-[#3341551a] h-[60vh] flex flex-col">
+        <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-xl border border-[#3341551a] h-[50vh] sm:h-[60vh] flex flex-col">
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-6">
             {messages.map((message, index) => (
@@ -239,13 +240,13 @@ export default function ChatbotPage() {
             
             {/* Loading indicator */}
             {isLoading && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-white/80 border border-[#3341551a] p-4 rounded-2xl shadow-lg max-w-[80%]">
-                  <div className="flex space-x-2 items-center">
-                    <div className="w-3 h-3 rounded-full bg-[#2F86A6] animate-pulse"></div>
-                    <div className="w-3 h-3 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                    <div className="w-3 h-3 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                    <span className="text-sm text-[#64748B] ml-1">Thinking...</span>
+              <div className="flex justify-start mb-3 sm:mb-4">
+                <div className="bg-white/80 border border-[#3341551a] p-3 sm:p-4 rounded-2xl shadow-lg max-w-[85%] sm:max-w-[80%]">
+                  <div className="flex space-x-1.5 sm:space-x-2 items-center">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#2F86A6] animate-pulse"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+                    <span className="text-xs sm:text-sm text-[#64748B] ml-1">Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -253,22 +254,22 @@ export default function ChatbotPage() {
           </div>
           
           {/* Input area */}
-          <div className="p-4 border-t border-[#3341551a]">
+          <div className="p-3 sm:p-4 border-t border-[#3341551a]">
             <form onSubmit={handleSubmit} className="flex items-center">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask about your expenses (e.g., How much did I spend on food this month?)"
-                className="flex-1 p-4 rounded-l-xl border border-[#3341551a] focus:outline-none focus:ring-2 focus:ring-[#2F86A6]"
+                placeholder="Ask about your expenses..."
+                className="flex-1 py-2 px-3 sm:p-4 text-sm sm:text-base rounded-l-xl border border-[#3341551a] focus:outline-none focus:ring-2 focus:ring-[#2F86A6] text-black"
                 disabled={isLoading}
               />
               <button
                 type="submit"
-                className="bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white p-4 rounded-r-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white py-2 px-3 sm:p-4 rounded-r-xl hover:opacity-90 transition-opacity disabled:opacity-50"
                 disabled={isLoading || !inputValue.trim()}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
@@ -277,30 +278,31 @@ export default function ChatbotPage() {
         </div>
         
         {/* Tips section */}
-        <div className="mt-8 bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg border border-[#3341551a] p-6">
-          <h2 className="text-xl font-bold text-[#0F172A] mb-4">Tips for better results</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-[#2F86A6]">Try asking about:</h3>
-              <ul className="list-disc pl-5 text-[#334155] space-y-1">
-                <li>Spending in specific categories (food, transport, etc.)</li>
-                <li>Expenses in a specific month or time period</li>
+        <div className="mt-4 sm:mt-6 md:mt-8 bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg border border-[#3341551a] p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] mb-2 sm:mb-4">Tips for better results</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-sm sm:text-base font-semibold text-[#2F86A6]">Try asking about:</h3>
+              <ul className="list-disc pl-4 sm:pl-5 text-xs sm:text-sm text-[#334155] space-y-0.5 sm:space-y-1">
+                <li>Spending in specific categories</li>
+                <li>Expenses in a specific month</li>
                 <li>Comparing expenses between categories</li>
                 <li>Your biggest expenses in a category</li>
               </ul>
             </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold text-[#2F86A6]">Examples:</h3>
-              <ul className="list-disc pl-5 text-[#334155] space-y-1">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-sm sm:text-base font-semibold text-[#2F86A6]">Examples:</h3>
+              <ul className="list-disc pl-4 sm:pl-5 text-xs sm:text-sm text-[#334155] space-y-0.5 sm:space-y-1">
                 <li>"How much did I spend on food in July?"</li>
-                <li>"What was my largest healthcare expense this month?"</li>
+                <li>"What was my largest healthcare expense?"</li>
                 <li>"Compare my transport and food expenses"</li>
-                <li>"Show me all entertainment costs from last month"</li>
+                <li>"Which vendor did I spend most at?"</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import InvoiceSidebar from '../../../components/InvoiceSidebar';
 import ReceiptSidebar from '../../../components/ReceiptSidebar';
 import Header from '../../../components/Header';
 import InstructionsSidebar from '../../../components/InstructionsSidebar';
+import Footer from '@/components/Footer';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -14,6 +15,7 @@ export default function UploadPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [isOnline, setIsOnline] = useState(true);
 
   
   useEffect(() => {
@@ -27,6 +29,25 @@ export default function UploadPage() {
     }
     setPreviewUrl(null);
   }, [files]);
+  
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    // Set initial status
+    setIsOnline(navigator.onLine);
+    
+    // Add event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
@@ -50,34 +71,78 @@ export default function UploadPage() {
     setDragActive(false);
   };
 
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+
   const handleUpload = async () => {
     console.log('Uploading files:', files);
     if (files.length === 0) return;
 
+    // Reset any previous error messages
+    setErrorMessage('');
+    setShowError(false);
     setUploading(true);
+
+    // Check if network is available
+    if (!isOnline) {
+      setErrorMessage("Network connection unavailable. Please check your internet connection and try again.");
+      setShowError(true);
+      setUploading(false);
+      return;
+    }
+
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
     console.log(formData);
 
     try {
+      // Add timeout to the fetch request to detect network issues
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch('http://127.0.0.1:8000/api/upload', {
         method: 'POST',
         body: formData,
+        signal: controller.signal
       });
-
+      
+      clearTimeout(timeoutId); // Clear the timeout if request completes
       
       if (response.ok) {
         const data = await response.json();
-        
-  setExtractedData(data[0]);  // Use first item from array
-  
+        setExtractedData(data[0]);  // Use first item from array
         setSidebarOpen(true);
       } else {
-        alert('Upload failed');
+        setErrorMessage(`Upload failed: ${response.status} ${response.statusText}`);
+        setShowError(true);
       }
     } catch (error) {
       console.error('Error uploading files:', error);
-      alert('Error uploading files');
+      
+      // Handle specific network-related errors
+      if (error.name === 'AbortError') {
+        setErrorMessage("Request timed out. The server might be down or your connection is too slow. Please try again later.");
+      } else if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+        // Mark as offline if we detected a network error
+        setIsOnline(false);
+        setErrorMessage("Network connection error. Please check your internet connection and try again.");
+      } else if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+        setErrorMessage("Unable to connect to server. The server might be down or not running.");
+      } else if (!navigator.onLine) {
+        setIsOnline(false);
+        setErrorMessage("You are currently offline. Please reconnect to the internet and try again.");
+      } else {
+        setErrorMessage(`Error uploading: ${error.message}`);
+      }
+      
+      setShowError(true);
+      
+      // Automatically retry connection check after 5 seconds
+      if (!isOnline) {
+        setTimeout(() => {
+          setIsOnline(navigator.onLine);
+        }, 5000);
+      }
     } finally {
       setUploading(false);
     }
@@ -110,6 +175,55 @@ export default function UploadPage() {
             <p className="mt-2 text-sm text-[#2F86A6]">Upload receipts and invoices to extract structured data</p>
           </div>
 
+          {/* Network status indicator */}
+          <div className={`mb-4 p-2 px-4 rounded-full inline-flex items-center ${isOnline ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} border ${isOnline ? 'border-green-300' : 'border-red-300'}`}>
+            <div className={`w-3 h-3 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm font-medium">
+              {isOnline ? 'Connected to network' : 'Network unavailable - Check your connection'}
+            </span>
+          </div>
+
+          {/* Error message alert */}
+          {showError && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Network Error</h3>
+                  <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
+                  {files.length > 0 && (
+                    <div className="mt-2">
+                      <button 
+                        onClick={handleUpload}
+                        disabled={!isOnline || uploading}
+                        className="text-sm bg-red-100 hover:bg-red-200 text-red-800 font-medium py-1 px-3 rounded-md disabled:opacity-50"
+                      >
+                        {uploading ? 'Trying...' : 'Retry Upload'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="ml-auto pl-3">
+                  <div className="-mx-1.5 -my-1.5">
+                    <button
+                      onClick={() => setShowError(false)}
+                      className="inline-flex rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none"
+                    >
+                      <span className="sr-only">Dismiss</span>
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="border-2 border-[#3341551a] bg-white rounded-2xl p-8 mb-6 shadow-lg transition-all" onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
             <div className="flex items-center justify-between">
               <label className="block text-base font-bold text-[#0F172A] mb-2">File Upload</label>
@@ -176,6 +290,7 @@ export default function UploadPage() {
           />
         )}
       </div>
+      <Footer />
     </div>
   );
 }

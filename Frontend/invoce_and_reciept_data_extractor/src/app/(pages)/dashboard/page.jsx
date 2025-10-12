@@ -2,11 +2,12 @@
 import { auth } from "@/lib/firebase";
 {/*import Navbar from "@components/";*/}
 import Navbar from '../../components/navbar';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import Chart from "../../components/chart"
 import Head from 'next/head';
+import Footer from "@/components/Footer";
 
 // Adding styles for liquid animations
 const liquidStyles = `
@@ -96,6 +97,7 @@ export default function Dashboard() {
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [userId, setUserId] = useState(null);
   const [expectedExpenses, setExpectedExpenses] = useState(45000.0);
+  const [clusterInfo, setClusterInfo] = useState({ cluster_id: null, loading: true });
   const router = useRouter();
   
   // Add dynamic liquid animation styles
@@ -191,6 +193,9 @@ export default function Dashboard() {
           setUserName(json.user.name);
           console.log("User name set to:", json.user.name);
         }
+        
+        // Fetch user's cluster ID
+        fetchUserClusterId(userId);
       })
       .catch((err) => {
         console.error("Error fetching user data:", err);
@@ -199,6 +204,85 @@ export default function Dashboard() {
         console.log("User name set to default: User");
       });
   }, [userId]);
+  
+  // Fetch the user's cluster ID
+  const fetchUserClusterId = async (userId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/get/user/cluster/${userId}`);
+      const data = await response.json();
+      
+      if (data.cluster_id !== undefined) {
+        setClusterInfo({ 
+          cluster_id: data.cluster_id, 
+          loading: false 
+        });
+        
+        // After getting the cluster ID, fetch expected expenses
+        fetchExpectedExpenses(data.cluster_id);
+      } else {
+        console.error("Cluster ID not found for user");
+        setClusterInfo({ cluster_id: null, loading: false });
+      }
+    } catch (error) {
+      console.error("Error fetching user's cluster ID:", error);
+      setClusterInfo({ cluster_id: null, loading: false });
+    }
+  };
+  
+  // Fetch the expected expenses based on cluster ID
+  const fetchExpectedExpenses = async (clusterId) => {
+    try {
+      // Get current date info
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-based (0 = January)
+      
+      // Create array of the previous 3 months
+      const previousMonths = [];
+      for (let i = 1; i <= 3; i++) {
+        const previousDate = new Date(currentYear, currentMonth - i, 1);
+        const month = previousDate.toLocaleString('default', { month: 'long' });
+        const year = previousDate.getFullYear().toString();
+        previousMonths.push({ month, year });
+      }
+      
+      console.log("Fetching expected expenses for previous months:", previousMonths);
+      
+      // Fetch expected expenses for the last 3 months with the same cluster ID
+      const response = await fetch(`http://127.0.0.1:8000/get/expected_expenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cluster_id: clusterId,
+          months: previousMonths.map(m => m.month),
+          years: previousMonths.map(m => m.year),
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("Fetched expected expenses data:", data);
+      
+      if (data.expenses && data.expenses.length > 0) {
+        // Calculate average of last 3 months
+        const totalExpense = data.expenses.reduce((sum, expense) => sum + expense.expected_expense, 0);
+        const avgExpense = totalExpense / data.expenses.length;
+        
+        // Add 4% to the average
+        const projectedExpense = avgExpense * 1.04;
+        
+        console.log(`Average expense: ${avgExpense}, Projected (with 4% increase): ${projectedExpense}`);
+        
+        // Update the expected expense state
+        setExpectedExpenses(projectedExpense);
+      } else {
+        console.log("No expected expense data found, keeping default value");
+      }
+    } catch (error) {
+      console.error("Error fetching expected expenses:", error);
+    }
+  };
 
   // ✅ Fetch receipts when userId is available
   useEffect(() => {
@@ -357,13 +441,23 @@ export default function Dashboard() {
 
                   {/* Expected Expenses */}
                   <div className="space-y-4">
-                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>Expected Expenses</h2>
+                    <h2 className="text-3xl font-black text-[#0F172A] tracking-wide flex items-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Expected Expenses
+                      {clusterInfo.loading && (
+                        <div className="ml-3 inline-block">
+                          <div className="w-5 h-5 border-2 border-t-[#2F86A6] border-r-[#34BE82] border-b-[#2FDD92] border-l-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </h2>
                     <p className="text-5xl font-black text-transparent bg-gradient-to-r from-[#34BE82] to-[#2FDD92] bg-clip-text" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Rs. {expectedExpenses.toLocaleString("en-LK", { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex items-center space-x-6">
                       <p className="text-[#34BE82] font-semibold text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
                         {new Date().toLocaleString('default', { month: 'long' })} budget
+                        {clusterInfo.cluster_id !== null && (
+                          <span className="ml-2 text-xs text-[#64748B]">(based on similar users)</span>
+                        )}
                       </p>
                       <div className="flex items-center space-x-3">
                         <div className="w-20 h-3 bg-[#E5E7EB] rounded-full overflow-hidden border border-[#3341551a]">
@@ -591,8 +685,302 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          
+          {/* Floating Chatbot Widget */}
+          <ChatbotWidget userId={userId} />
         </div>
       </main>
+      
+        <Footer />
+      
     </>
+  );
+}
+
+// Chatbot Widget Component
+const ChatbotWidget = ({ userId }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  
+  // Default welcome message
+  const welcomeMessage = {
+    answer: "Hi there! I'm your expense assistant. Ask me anything about your expenses.",
+    suggestions: [
+      "How much did I spend on food this month?",
+      "What was my biggest expense?",
+      "Show my transport costs"
+    ]
+  };
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Initialize with welcome message when opened
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && userId) {
+      setMessages([
+        { text: welcomeMessage, isUser: false }
+      ]);
+    }
+  }, [isOpen, userId]);
+
+  // Listen for suggestion clicks
+  useEffect(() => {
+    const handleSuggestion = (e) => {
+      setInputValue(e.detail);
+    };
+
+    window.addEventListener('suggest', handleSuggestion);
+    return () => {
+      window.removeEventListener('suggest', handleSuggestion);
+    };
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!inputValue.trim() || !userId) return;
+    
+    const userQuestion = inputValue.trim();
+    setMessages(prev => [...prev, { text: userQuestion, isUser: true }]);
+    setInputValue("");
+    setIsLoading(true);
+    
+    try {
+      // Set up timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      // Call the backend API
+      const response = await fetch(
+        `http://127.0.0.1:8000/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal
+        }
+      );
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      // Check if there's an error in the response
+      if (data.detail) {
+        throw new Error(data.detail);
+      }
+      setMessages(prev => [...prev, { text: data, isUser: false }]);
+    } catch (error) {
+      console.error("Error asking question:", error);
+      
+      let errorMessage = "Sorry, I couldn't process your question. Please try again.";
+      
+      if (error.name === 'AbortError') {
+        errorMessage = "The request timed out. Please check your connection and try again.";
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = "Couldn't connect to the server. Please make sure the backend is running.";
+      } else {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      setMessages(prev => [
+        ...prev, 
+        { 
+          text: {
+            answer: errorMessage,
+            suggestions: [
+              "How much did I spend on food this month?",
+              "Show my transport costs",
+              "What were my healthcare expenses?"
+            ]
+          }, 
+          isUser: false 
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mini version of ChatBubble for the widget
+  const ChatBubble = ({ message, isUser }) => {
+    return (
+      <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2`}>
+        <div
+          className={`p-3 rounded-xl max-w-[85%] text-sm ${
+            isUser
+              ? "bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white"
+              : "bg-white/90 border border-[#3341551a] text-[#0F172A]"
+          } shadow-lg`}
+        >
+          {isUser ? (
+            <p>{message}</p>
+          ) : (
+            <div className="space-y-1.5">
+              <p className="whitespace-pre-wrap">{message.answer}</p>
+              
+              {/* Display suggestions if available */}
+              {message.suggestions && message.suggestions.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-[#3341551a]">
+                  <p className="text-xs font-medium mb-1.5 text-[#2F86A6]">Try asking:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {message.suggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => window.dispatchEvent(new CustomEvent('suggest', { detail: suggestion }))}
+                        className="text-[10px] bg-[#2F86A6]/10 hover:bg-[#2F86A6]/20 text-[#2F86A6] py-1 px-2 rounded-full transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Show extracted category and month if available */}
+              {message.extracted_details && (
+                <div className="mt-2 text-[10px] text-[#64748B] italic">
+                  {message.extracted_details.category && (
+                    <span className="mr-2">
+                      Category: <span className="font-medium">{message.extracted_details.category}</span>
+                    </span>
+                  )}
+                  {message.extracted_details.month && (
+                    <span>
+                      Month: <span className="font-medium">{message.extracted_details.month}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Chatbot button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-14 h-14 rounded-full bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+        style={{ 
+          transitionProperty: 'transform, opacity', 
+          transitionDuration: '0.3s'
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </button>
+
+      {/* Chatbot panel */}
+      <div 
+        className={`bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3341551a] overflow-hidden transition-all duration-300 absolute bottom-0 right-0 w-80 sm:w-96 ${
+          isOpen ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10 pointer-events-none'
+        }`}
+        style={{ 
+          height: '400px', 
+          transitionProperty: 'opacity, transform', 
+          transitionDuration: '0.3s',
+        }}
+      >
+        {/* Chatbot header */}
+        <div className="bg-gradient-to-r from-[#2F86A6] to-[#34BE82] p-3 text-white flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <h3 className="font-bold">Expense Assistant</h3>
+          </div>
+          <button 
+            onClick={() => setIsOpen(false)} 
+            className="text-white/80 hover:text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Messages area */}
+        <div className="h-[calc(100%-96px)] overflow-y-auto p-4">
+          {!userId ? (
+            <div className="h-full flex items-center justify-center text-center px-4">
+              <p className="text-[#64748B]">Please sign in to use the chatbot.</p>
+            </div>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <ChatBubble 
+                  key={index} 
+                  message={message.text} 
+                  isUser={message.isUser} 
+                />
+              ))}
+              <div ref={messagesEndRef} />
+              
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="flex justify-start mb-2">
+                  <div className="bg-white/90 border border-[#3341551a] p-3 rounded-xl shadow-lg">
+                    <div className="flex space-x-1.5 items-center">
+                      <div className="w-2 h-2 rounded-full bg-[#2F86A6] animate-pulse"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                      <div className="w-2 h-2 rounded-full bg-[#2F86A6] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Input area */}
+        {userId && (
+          <div className="p-2 border-t border-[#3341551a]">
+            <form onSubmit={handleSubmit} className="flex items-center">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask about your expenses..."
+                className="flex-1 py-2 px-3 text-sm rounded-l-xl border border-[#3341551a] focus:outline-none focus:ring-2 focus:ring-[#2F86A6] text-black"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                className="bg-gradient-to-r from-[#2F86A6] to-[#34BE82] text-white py-2 px-3 rounded-r-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                disabled={isLoading || !inputValue.trim()}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+      
+    </div>
+    
   );
 }
