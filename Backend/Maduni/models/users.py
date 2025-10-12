@@ -1,5 +1,5 @@
 # models/users.py
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -14,10 +14,10 @@ class Users(BaseModel):
     education_level: str
     car_ownership: str
     occupation: str
-    monthly_salary: int
+    monthly_salary: int = Field(..., ge=0)
     average_expenses_per_month: Optional[int] = None
     average_expenses_per_year: Optional[int] = None
     cluster_id: Optional[int] = None
-    family_member_count: int
+    family_member_count: int = Field(..., ge=0)
     exercise_frequency: str
     email: EmailStr

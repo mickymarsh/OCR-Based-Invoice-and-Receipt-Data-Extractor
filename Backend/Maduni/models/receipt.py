@@ -8,3 +8,6 @@ class Receipt(BaseModel):
     date: str
     total_price: float
     category: str
+
+
+    

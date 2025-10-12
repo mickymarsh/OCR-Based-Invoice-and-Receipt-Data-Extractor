@@ -6,3 +6,5 @@ class ReceiptOut(BaseModel):
     category: str
     date: datetime
     total_price: float
+
+
