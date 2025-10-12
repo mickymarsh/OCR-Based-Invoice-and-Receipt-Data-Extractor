@@ -19,7 +19,7 @@ class InvoiceData(BaseModel):
 	sent_email: Optional[bool]
 	total_amount: float = Field(..., ge=0, description="Total amount must be non-negative")
 	uploaded_date: Optional[datetime]  # System-generated ISO date string
-	user_id: Optional[str]
+	user_id: str
 
 @router.post("/invoice")
 async def save_invoice(invoice: InvoiceData):
