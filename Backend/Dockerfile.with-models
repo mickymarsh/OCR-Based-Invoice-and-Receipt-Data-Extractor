@@ -1,0 +1,77 @@
+# Fixed Dockerfile.with-models
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HF_HOME=/app/models \
+    TRANSFORMERS_CACHE=/app/models \
+    HF_HUB_CACHE=/app/models
+
+# Install system dependencies with FIXED package names
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    libgl1-mesa-dri \
+    libgtk-3-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
+    libxss1 \
+    libnss3 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libatk1.0-0 \
+    libcairo-gobject2 \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libopenblas-dev \
+    gfortran \
+    wget \
+    curl \
+    libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory and model directories
+WORKDIR /app
+RUN mkdir -p /app/temp /app/models
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Create a script to pre-download models
+COPY download_models.py .
+
+# Pre-download all models during build
+RUN python download_models.py
+
+# Copy application code
+COPY . .
+
+# Copy your existing cluster model
+COPY models/cluster_pipeline.joblib /app/models/
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/ || exit 1
+
+    
+# Run the application
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

@@ -138,7 +138,7 @@ export default function ChatbotPage() {
       
       // Call the backend API
       const response = await fetch(
-        `http://127.0.0.1:8000/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
+        `http://127.0.0.1:8888/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
         {
           method: 'GET',
           headers: {

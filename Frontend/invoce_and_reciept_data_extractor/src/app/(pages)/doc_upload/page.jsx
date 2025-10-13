@@ -100,7 +100,7 @@ export default function UploadPage() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      const response = await fetch('http://127.0.0.1:8000/api/upload', {
+      const response = await fetch('http://127.0.0.1:8888/api/upload', {
         method: 'POST',
         body: formData,
         signal: controller.signal

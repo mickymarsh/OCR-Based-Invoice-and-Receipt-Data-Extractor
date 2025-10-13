@@ -97,7 +97,7 @@ export default function AllExpenses() {
     
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/get/receipts/${userId}/by-month?month=${selectedMonth}&year=${selectedYear}`
+        `http://127.0.0.1:8888/get/receipts/${userId}/by-month?month=${selectedMonth}&year=${selectedYear}`
       );
       
       if (!response.ok) {

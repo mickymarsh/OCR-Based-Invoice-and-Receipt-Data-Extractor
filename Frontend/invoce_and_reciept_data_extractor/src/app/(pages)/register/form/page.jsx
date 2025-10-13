@@ -94,7 +94,7 @@ export default function SignupFormPage() {
       
       console.log("Prediction data:", predictionData);
       
-      const response = await fetch("http://127.0.0.1:8000/user/predict-cluster", {
+      const response = await fetch("http://127.0.0.1:8888/user/predict-cluster", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +164,7 @@ export default function SignupFormPage() {
         cluster_id: predictedClusterId
       };
 
-      const response = await fetch("http://127.0.0.1:8000/auth/setup-profile", {
+      const response = await fetch("http://127.0.0.1:8888/auth/setup-profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

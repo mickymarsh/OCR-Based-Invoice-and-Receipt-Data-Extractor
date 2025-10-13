@@ -250,7 +250,7 @@ export default function ReceiptSidebar({ data, editing, onEdit, onSave, onDataCh
     formatted.total_price = toFloat(formatted.total_price);
     console.log("Saving formatted data:", formatted);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/receipt', {
+      const response = await fetch('http://127.0.0.1:8888/api/receipt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

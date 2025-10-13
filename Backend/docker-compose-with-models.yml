@@ -1,0 +1,39 @@
+services:
+  ocr-backend-with-models:
+    build:
+      context: .
+      dockerfile: Dockerfile.with-models
+    container_name: ocr-extractor-with-models
+    ports:
+      - "8888:8000"  # Changed host port to 8001 to avoid conflict
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=production
+      - HF_HOME=/app/models
+      - TRANSFORMERS_CACHE=/app/models
+      - HF_HUB_CACHE=/app/models
+    env_file:
+      - .env
+    volumes:
+      - ./temp:/app/temp
+      - ./models:/app/models
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro
+      # Mount models as read-only to preserve pre-downloaded models
+      - models_cache:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 6G  # Increased for models
+        reservations:
+          memory: 4G  # Increased for models
+
+volumes:
+  models_cache:
+    driver: local

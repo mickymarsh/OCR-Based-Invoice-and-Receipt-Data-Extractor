@@ -78,11 +78,11 @@ export default function UserTransactions() {
         const idToken = await user.getIdToken();
 
         const invoicesRes = await fetch(
-          `http://127.0.0.1:8000/fetch/user/invoices?user_id=${user.uid}`,
+          `http://127.0.0.1:8888/fetch/user/invoices?user_id=${user.uid}`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         const receiptsRes = await fetch(
-          `http://127.0.0.1:8000/fetch/user/receipts?user_id=${user.uid}`,
+          `http://127.0.0.1:8888/fetch/user/receipts?user_id=${user.uid}`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
 
@@ -165,8 +165,8 @@ export default function UserTransactions() {
 
       const baseUrl =
         editingType === "invoices"
-          ? `http://127.0.0.1:8000/fetch/edit/invoices?invoice_number=${editingId}&user_id=${user.uid}`
-          : `http://127.0.0.1:8000/fetch/edit/receipts?order_id=${editingId}&user_id=${user.uid}`;
+          ? `http://127.0.0.1:8888/fetch/edit/invoices?invoice_number=${editingId}&user_id=${user.uid}`
+          : `http://127.0.0.1:8888/fetch/edit/receipts?order_id=${editingId}&user_id=${user.uid}`;
 
       const response = await fetch(baseUrl, {
         method: "PUT",
@@ -211,8 +211,8 @@ export default function UserTransactions() {
       const idToken = await user.getIdToken();
       const baseUrl =
         type === "invoices"
-          ? `http://127.0.0.1:8000/fetch/delete/invoices?invoice_number=${id}&user_id=${user.uid}`
-          : `http://127.0.0.1:8000/fetch/delete/receipts?order_id=${id}&user_id=${user.uid}`;
+          ? `http://127.0.0.1:8888/fetch/delete/invoices?invoice_number=${id}&user_id=${user.uid}`
+          : `http://127.0.0.1:8888/fetch/delete/receipts?order_id=${id}&user_id=${user.uid}`;
 
       const response = await fetch(baseUrl, {
         method: "DELETE",
