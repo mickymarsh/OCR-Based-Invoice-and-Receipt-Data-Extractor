@@ -26,3 +26,5 @@ def check_invoices():
                 emails_sent += 1
 
     return {"status": "done", "emails_sent": emails_sent}
+
+
