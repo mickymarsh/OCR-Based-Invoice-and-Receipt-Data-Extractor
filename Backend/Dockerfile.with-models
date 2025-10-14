@@ -56,10 +56,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Create a script to pre-download models
 COPY download_models.py .
 
-# Pre-download all models during build
-RUN python download_models.py
-
-# Copy application code
+# RUN python -c "from transformers import LayoutLMv3Processor; LayoutLMv3Processor.from_pretrained('Mickeymarsh02/layoutlmv3-multimodel-finetuned-invoices03',  use_fast=True)"
+# RUN python -c "from transformers import LayoutLMv3Processor; LayoutLMv3Processor.from_pretrained('janodis/layoutlmv3-refinetuned-receipts',  use_fast=True)"
+# # Copy application code
 COPY . .
 
 # Copy your existing cluster model

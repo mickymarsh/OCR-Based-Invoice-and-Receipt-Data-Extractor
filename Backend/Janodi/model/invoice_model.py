@@ -6,6 +6,8 @@ from PIL import Image
 import torch
 from transformers import AutoProcessor, AutoModelForTokenClassification
 import re
+from transformers import LayoutLMv3Processor
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ def _init_invoice_model():
     if _processor is None or _model is None:
         logger.info("Loading invoice processor/model: %s (anonymous access)", _MODEL_ID)
         # New model does not require an HF token; load processor and model directly
-        _processor = AutoProcessor.from_pretrained(_MODEL_ID)
+        _processor = LayoutLMv3Processor.from_pretrained(_MODEL_ID, use_fast=True)
         _model = AutoModelForTokenClassification.from_pretrained(_MODEL_ID)
         # easyocr reader for text/box extraction (used to build text+boxes input)
         _reader = easyocr.Reader(['en'])
@@ -131,7 +133,7 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
         pred_ids = logits.argmax(-1).squeeze(0).tolist()
         word_ids = encoding.word_ids(batch_index=0)
 
-        # Map token predictions back to word-level labels (first token wins)
+        #Map token predictions back to word-level labels (first token wins)
         word_level_labels = []
         used = set()
         id2label = model.config.id2label
@@ -146,6 +148,16 @@ def extract_invoice_structured_data(image_path: str) -> Dict[str, str]:
             word_level_labels.append(lab.upper())
 
         word_level_labels = word_level_labels[:len(words)]
+        # Fallback for slow tokenizer: assume one label per word, in order
+        # id2label = model.config.id2label
+        # def _normalize_label(lab):
+        #     if lab.startswith("B-") or lab.startswith("I-") or lab.startswith("S-") or lab.startswith("E-"):
+        #         lab = lab.split("-", 1)[1]
+        #     return lab.upper()
+        # # Fallback for slow tokenizer: align as best as possible
+        
+
+        # word_level_labels = [_normalize_label(id2label.get(pid, "")) for pid in pred_ids]
 
         raw_struct = {}
         for w, lab in zip(words, word_level_labels):

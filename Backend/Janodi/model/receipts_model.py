@@ -6,6 +6,7 @@ from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
 import matplotlib.pyplot as plt
 from typing import Dict
 
+
 logger = logging.getLogger(__name__)
 
 # Lazy-loaded globals to avoid heavy work on module import
@@ -20,7 +21,7 @@ def _init_model():
     global _processor, _model, _id2label, _reader
     if _processor is None or _model is None:
         logger.info("Loading LayoutLMv3 processor and model: %s", _MODEL_NAME)
-        _processor = LayoutLMv3Processor.from_pretrained(_MODEL_NAME, apply_ocr=False)
+        _processor = LayoutLMv3Processor.from_pretrained(_MODEL_NAME, apply_ocr=False, use_fast=True)
         _model = LayoutLMv3ForTokenClassification.from_pretrained(_MODEL_NAME)
         _id2label = _model.config.id2label
         _reader = easyocr.Reader(['en'])
@@ -146,8 +147,12 @@ def extract_receipt_structured_data(image_path: str) -> Dict[str, str]:
             word_level_labels.append(_normalize_label(lbl))
 
         word_level_labels = word_level_labels[:len(words)]
+        # Fallback for slow tokenizer: assume one label per word, in order
+        # Fallback for slow tokenizer: align as best as possible
+       
 
-        # Aggregate words by label
+        #word_level_labels = [_normalize_label(id2label.get(pid, "")) for pid in pred_ids]
+                # Aggregate words by label
         raw_struct = {}
         for w, lab in zip(words, word_level_labels):
             if not lab or lab == "O":

@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.with-models
     container_name: ocr-extractor-with-models
     ports:
-      - "8888:8000"  # Changed host port to 8001 to avoid conflict
+      - "8888:8000" 
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=production
@@ -15,6 +15,7 @@ services:
     env_file:
       - .env
     volumes:
+      - ./hf-models:/root/.cache/huggingface/hub
       - ./temp:/app/temp
       - ./models:/app/models
       - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro

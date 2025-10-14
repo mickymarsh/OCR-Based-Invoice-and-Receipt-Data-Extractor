@@ -11,9 +11,8 @@ opencv-python==4.8.1.78
 Pillow==9.5.0
 torch==2.1.0
 torchvision==0.16.0
-transformers==4.35.0
-huggingface-hub==0.17.3
-tokenizers==0.14.1
+transformers== 4.48.3
+tokenizers== 0.21.0
 scikit-learn==1.4.0
 pandas==2.2.0
 numpy==1.26.3
