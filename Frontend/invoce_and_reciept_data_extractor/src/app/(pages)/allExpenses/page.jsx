@@ -1,5 +1,6 @@
 "use client";
 import { auth } from "@/lib/firebase";
+import { API_BASE } from "@/lib/config";
 import Navbar from '../../components/navbar';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -96,9 +97,8 @@ export default function AllExpenses() {
     setError(null);
     
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8888/get/receipts/${userId}/by-month?month=${selectedMonth}&year=${selectedYear}`
-      );
+      const url = `${API_BASE}/get/receipts/${userId}/by-month?month=${selectedMonth}&year=${selectedYear}`;
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

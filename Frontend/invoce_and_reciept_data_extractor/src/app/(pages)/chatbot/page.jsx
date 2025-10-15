@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Navbar from "../../components/navbar";
 import Footer from "@/components/Footer";
+import { API_BASE } from '@/lib/config';
 
 const ChatBubble = ({ message, isUser }) => {
   return (
@@ -138,7 +139,7 @@ export default function ChatbotPage() {
       
       // Call the backend API
       const response = await fetch(
-        `http://127.0.0.1:8888/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
+        `${API_BASE}/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
         {
           method: 'GET',
           headers: {

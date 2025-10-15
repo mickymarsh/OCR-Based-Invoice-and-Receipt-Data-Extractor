@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { API_BASE } from "@/lib/config";
 import { getAuth } from "firebase/auth";
 
 const invoiceFields = [
@@ -202,7 +203,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
     console.log('invoce data',invoiceData);
     try {
       console.log('sending invoice payload', invoiceData);
-      const response = await fetch('http://127.0.0.1:8888/api/invoice', {
+  const response = await fetch(`${API_BASE}/api/invoice`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,6 +6,7 @@ import ReceiptSidebar from '../../../components/ReceiptSidebar';
 import Header from '../../../components/Header';
 import InstructionsSidebar from '../../../components/InstructionsSidebar';
 import Footer from '@/components/Footer';
+import { API_BASE } from '@/lib/config';
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -100,7 +101,7 @@ export default function UploadPage() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      const response = await fetch('http://127.0.0.1:8888/api/upload', {
+  const response = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
         signal: controller.signal

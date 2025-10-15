@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Chart from "../../components/chart"
 import Head from 'next/head';
 import Footer from "@/components/Footer";
+import { API_BASE } from '@/lib/config';
 
 // Adding styles for liquid animations
 const liquidStyles = `
@@ -185,7 +186,7 @@ export default function Dashboard() {
     if (!userId) return;
     
     console.log("Fetching user data for:", userId);
-    fetch(`http://127.0.0.1:8888/get/user/${userId}`)
+  fetch(`${API_BASE}/get/user/${userId}`)
       .then((res) => res.json())
       .then((json) => {
         console.log("Fetched user data:", json);
@@ -208,7 +209,7 @@ export default function Dashboard() {
   // Fetch the user's cluster ID
   const fetchUserClusterId = async (userId) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8888/get/user/cluster/${userId}`);
+  const response = await fetch(`${API_BASE}/get/user/cluster/${userId}`);
       const data = await response.json();
       
       if (data.cluster_id !== undefined) {
@@ -249,7 +250,7 @@ export default function Dashboard() {
       console.log("Fetching expected expenses for previous months:", previousMonths);
       
       // Fetch expected expenses for the last 3 months with the same cluster ID
-      const response = await fetch(`http://127.0.0.1:8888/get/expected_expenses`, {
+      const response = await fetch(`${API_BASE}/get/expected_expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,7 +289,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!userId) return;
     console.log("Fetching receipts for user:", userId);
-    fetch(`http://127.0.0.1:8888/get/receipts/${userId}`)
+  fetch(`${API_BASE}/get/receipts/${userId}`)
       .then((res) => res.json())
       .then((json) => {
         console.log("Fetched receipts:", json);
@@ -762,7 +763,7 @@ const ChatbotWidget = ({ userId }) => {
       
       // Call the backend API
       const response = await fetch(
-        `http://127.0.0.1:8888/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
+        `${API_BASE}/chatbot/chat?question=${encodeURIComponent(userQuestion)}&user_id=${encodeURIComponent(userId)}`,
         {
           method: 'GET',
           headers: {

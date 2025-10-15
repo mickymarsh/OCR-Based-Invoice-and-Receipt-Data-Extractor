@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { API_BASE } from '@/lib/config';
 
 // Animated Background Component (light theme ocean style)
 const AnimatedBackground = () => {
+
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-white opacity-95"></div>
@@ -94,7 +96,7 @@ export default function SignupFormPage() {
       
       console.log("Prediction data:", predictionData);
       
-      const response = await fetch("http://127.0.0.1:8888/user/predict-cluster", {
+      const response = await fetch(`${API_BASE}/user/predict-cluster`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +166,7 @@ export default function SignupFormPage() {
         cluster_id: predictedClusterId
       };
 
-      const response = await fetch("http://127.0.0.1:8888/auth/setup-profile", {
+      const response = await fetch(`${API_BASE}/auth/setup-profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

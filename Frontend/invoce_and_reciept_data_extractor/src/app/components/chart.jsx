@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { API_BASE } from "@/lib/config";
 import {
   LineChart,
   Line,
@@ -46,7 +47,7 @@ export default function ReceiptsCharts() {
   // ✅ Fetch receipts when userId is available
   useEffect(() => {
     if (!userId) return;
-    fetch(`http://127.0.0.1:8888/get/receipts/${userId}`)
+  fetch(`${API_BASE}/get/receipts/${userId}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.receipts) {
