@@ -99,7 +99,7 @@ export default function UploadPage() {
     try {
       // Add timeout to the fetch request to detect network issues
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 30 second timeout
       
   const response = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
