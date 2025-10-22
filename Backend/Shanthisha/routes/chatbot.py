@@ -68,7 +68,7 @@ def fetch_receipts(user_id: str, category: str = None, month: str = None, is_gen
                 receipt_date = doc['date'].replace(tzinfo=None)
             else:
                 receipt_date = datetime.strptime(doc['date'], "%Y-%m-%d").replace(tzinfo=None)
-            print("Receipt date:", receipt_date)
+            # print("Receipt date:", receipt_date)
             
             # Skip if not in the requested month/year (if month is specified)
             if start_date and end_date and (receipt_date < start_date or receipt_date >= end_date):
@@ -79,7 +79,7 @@ def fetch_receipts(user_id: str, category: str = None, month: str = None, is_gen
                 continue
                 
             # Include in summary
-            vendor = doc.get('vendor_name', 'Unknown vendor')
+            vendor = doc.get('seller_name', 'Unknown vendor')
             amount = float(doc.get('total_price', 0))
             item_category = doc.get('category', category if not is_general_question else 'Uncategorized')
             
@@ -87,8 +87,8 @@ def fetch_receipts(user_id: str, category: str = None, month: str = None, is_gen
             if is_general_question:
                 vendor_totals[vendor] = vendor_totals.get(vendor, 0) + amount
                 category_totals[item_category] = category_totals.get(item_category, 0) + amount
-            
-            summary += f"- {doc['date']}: LKR {amount} at {vendor} (Category: {item_category})\n"
+
+            summary += f"- {doc['date']}: LKR {amount} at {vendor} items {doc.get('items', [])} (Category: {item_category})\n"
             total += amount
             count += 1
         
@@ -209,6 +209,27 @@ def smart_chat(
         # Validate inputs
         if not question.strip():
             raise HTTPException(status_code=400, detail="Question cannot be empty")
+        
+        # Handle casual greetings like "hi", "hello", etc.
+        from utils.gemini import is_casual_greeting, handle_casual_conversation
+        
+        if is_casual_greeting(question):
+            greeting_response = handle_casual_conversation(question)
+            return {
+                "answer": greeting_response,
+                "extracted_details": {
+                    "category": None,
+                    "month": None,
+                    "confidence": "high",
+                    "is_casual_greeting": True
+                },
+                "suggestions": [
+                    "How much did I spend on food this month?",
+                    "Show me my expenses for June",
+                    "What were my biggest expenses last month?",
+                    "Compare my spending across categories"
+                ]
+            }
         
         logger.info("Extracting details from question using AI...")
         print("Question:", question)

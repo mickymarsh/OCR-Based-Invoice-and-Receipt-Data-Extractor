@@ -21,3 +21,4 @@ class Users(BaseModel):
     family_member_count: int
     exercise_frequency: str
     email: EmailStr
+    cluster_id: Optional[int] = None

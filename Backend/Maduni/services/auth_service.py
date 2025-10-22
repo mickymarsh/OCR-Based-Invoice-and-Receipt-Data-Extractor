@@ -44,7 +44,7 @@ def save_user(uid: str, email: str, user_data: dict) -> Users:
             "monthly_salary": user_data["monthly_salary"],
             "average_expenses_per_month": user_data.get("average_expenses_per_month"),
             "average_expenses_per_year": user_data.get("average_expenses_per_year"),
-            "cluster_id": None,
+            "cluster_id": user_data.get("cluster_id"),
             "family_member_count": user_data["family_member_count"],
             "email": email,
             "exercise_frequency": user_data["exercise_frequency"],
