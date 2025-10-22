@@ -96,8 +96,9 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [userId, setUserId] = useState(null);
-  const [expectedExpenses, setExpectedExpenses] = useState(45000.0);
+  const [expectedExpenses, setExpectedExpenses] = useState(0.0);
   const [clusterInfo, setClusterInfo] = useState({ cluster_id: null, loading: true });
+  const [salary, setSalary] = useState(0);
   const router = useRouter();
   
   // Add dynamic liquid animation styles
@@ -192,6 +193,7 @@ export default function Dashboard() {
         if (json.user && json.user.name) {
           setUserName(json.user.name);
           console.log("User name set to:", json.user.name);
+          setSalary(json.user.monthly_salary);
         }
         
         // Fetch user's cluster ID
@@ -495,7 +497,7 @@ export default function Dashboard() {
                         }`}
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
-                        Rs. {Math.abs(expectedExpenses - totalExpenses).toLocaleString("en-LK", { minimumFractionDigits: 2 })}
+                        Rs. {Math.abs(salary - totalExpenses).toLocaleString("en-LK", { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Footer from "@/components/Footer";
 
 // Light ocean gradient background
@@ -17,6 +17,20 @@ const AnimatedBackground = () => (
   </div>
 );
 
+// Loading page component
+const LoadingPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen text-gray-800 p-4 relative overflow-hidden">
+    <AnimatedBackground />
+    <div className="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-emerald-200/50 z-10 flex flex-col items-center">
+      <Loader2 className="h-12 w-12 text-emerald-500 animate-spin mb-4" />
+      <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
+        Logging In...
+      </h2>
+      <p className="text-gray-500 mt-2">Please wait while we process your login</p>
+    </div>
+  </div>
+);
+
 // Footer is now imported from @/components/Footer
 
 export default function LoginPage() {
@@ -25,45 +39,79 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false); // Page-level loading state, initially false
   const router = useRouter();
+  
+  // Check if user is already logged in
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     if (user) {
+  //       // User is signed in, redirect to dashboard
+  //       router.push("dashboard");
+  //     } else {
+  //       // No user is signed in, show login page
+  //       setPageLoading(false);
+  //     }
+  //   });
+    
+  //   // Cleanup subscription
+  //   return () => unsubscribe();
+  // }, [router]);
 
   const handleEmailLogin = async () => {
     setIsLoading(true);
     setError("");
+    setPageLoading(true); // Show loading page
 
     try {
       if (!email || !password) {
         setError("Please fill in all fields");
         setIsLoading(false);
+        setPageLoading(false); // Hide loading page
         return;
       }
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log("Logged in:", userCredential.user);
+      
+      // Keep the loading page showing while we navigate
+      // The loading page will remain until the dashboard is loaded
       router.push("dashboard");
     } catch (error) {
       console.error("Login error:", error.message);
       setError(error.message);
+      setPageLoading(false); // Hide loading page on error
     } finally {
       setIsLoading(false);
+      // We don't set pageLoading to false here because we want to keep showing the loading page during navigation
     }
   };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError("");
+    setPageLoading(true); // Show loading page
 
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google logged in:", result.user);
+      
+      // Keep the loading page showing while we navigate
       router.push("dashboard");
     } catch (error) {
       console.error("Google login error:", error.message);
       setError(error.message);
+      setPageLoading(false); // Hide loading page on error
     } finally {
       setIsLoading(false);
+      // We don't set pageLoading to false here because we want to keep showing the loading page during navigation
     }
   };
+
+  // Show loading page when login is in progress or data is being fetched
+  if (pageLoading) {
+    return <LoadingPage />;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-gray-800 p-4 relative overflow-hidden">

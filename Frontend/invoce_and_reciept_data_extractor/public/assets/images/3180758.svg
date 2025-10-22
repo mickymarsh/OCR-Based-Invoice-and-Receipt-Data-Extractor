@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="100%" height="100%" fill="#f5f3ff"/>
+  <g transform="translate(400, 300)">
+    <!-- Financial Planning Illustration -->
+    <rect x="-350" y="-250" width="700" height="500" rx="20" ry="20" fill="#ffffff" stroke="#8b5cf6" stroke-width="4"/>
+    
+    <!-- Savings & Growth Graph -->
+    <rect x="-320" y="-200" width="640" height="300" rx="10" ry="10" fill="#f8fafc" stroke="#e5e7eb" stroke-width="2"/>
+    
+    <!-- Growth Line Chart -->
+    <polyline points="-300,-50 -200,0 -100,-100 0,-80 100,-130 200,-60 300,-120" 
+             fill="none" stroke="#4f46e5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+    
+    <!-- Goal Line -->
+    <line x1="-300" y1="-150" x2="300" y2="-150" stroke="#10b981" stroke-width="3" stroke-dasharray="10,5"/>
+    <text x="-290" y="-160" font-family="Arial" font-size="14" fill="#047857">Savings Goal</text>
+    
+    <!-- X & Y Axis -->
+    <line x1="-300" y1="50" x2="300" y2="50" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="-300" y1="-200" x2="-300" y2="50" stroke="#94a3b8" stroke-width="2"/>
+    
+    <!-- Month Labels -->
+    <text x="-300" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Jan</text>
+    <text x="-200" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Feb</text>
+    <text x="-100" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Mar</text>
+    <text x="0" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Apr</text>
+    <text x="100" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">May</text>
+    <text x="200" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Jun</text>
+    <text x="300" y="70" font-family="Arial" font-size="12" fill="#64748b" text-anchor="middle">Jul</text>
+    
+    <!-- Financial Planning Icons -->
+    <g transform="translate(-250, 150)">
+      <!-- House Icon -->
+      <rect x="-30" y="-30" width="60" height="60" rx="5" ry="5" fill="#c7d2fe" opacity="0.7"/>
+      <polygon points="0,-20 -20,0 -10,0 -10,15 10,15 10,0 20,0" fill="#4f46e5"/>
+    </g>
+    
+    <g transform="translate(-100, 150)">
+      <!-- Car Icon -->
+      <rect x="-30" y="-30" width="60" height="60" rx="5" ry="5" fill="#bae6fd" opacity="0.7"/>
+      <rect x="-20" y="-5" width="40" height="15" rx="5" ry="5" fill="#0ea5e9"/>
+      <circle cx="-10" cy="10" r="7" fill="#0ea5e9"/>
+      <circle cx="10" cy="10" r="7" fill="#0ea5e9"/>
+    </g>
+    
+    <g transform="translate(50, 150)">
+      <!-- Education Icon -->
+      <rect x="-30" y="-30" width="60" height="60" rx="5" ry="5" fill="#bbf7d0" opacity="0.7"/>
+      <polygon points="0,-15 -20,0 20,0" fill="#10b981"/>
+      <rect x="-15" y="0" width="30" height="15" fill="#10b981"/>
+    </g>
+    
+    <g transform="translate(200, 150)">
+      <!-- Retirement Icon -->
+      <rect x="-30" y="-30" width="60" height="60" rx="5" ry="5" fill="#fde68a" opacity="0.7"/>
+      <circle cx="0" cy="0" r="15" fill="#f59e0b"/>
+      <text x="0" y="5" font-family="Arial" font-size="18" fill="white" text-anchor="middle">$</text>
+    </g>
+    
+    <!-- Title -->
+    <text x="0" y="-220" font-family="Arial" font-weight="bold" font-size="24" fill="#4f46e5" text-anchor="middle">Financial Planning & Growth</text>
+  </g>
+  <text x="400" y="580" font-family="Arial" font-size="24" fill="#374151" text-anchor="middle">Financial Planning - 3180758</text>
+</svg>

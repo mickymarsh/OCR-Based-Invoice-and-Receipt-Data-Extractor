@@ -125,6 +125,61 @@ def extract_question_details(question):
         logger.error(f"Error in extract_question_details: {str(e)}")
         return {"category": None, "month": None, "confidence": "low", "is_general_question": False}
 
+def is_casual_greeting(question):
+    """
+    Detect if the input is a casual greeting like 'hi', 'hello', etc.
+    
+    Args:
+        question (str): The user's input
+        
+    Returns:
+        bool: True if the input is a casual greeting, False otherwise
+    """
+    greeting_patterns = [
+        r'^hi$', r'^hello$', r'^hey$', r'^hola$', r'^howdy$', r'^greetings$',
+        r'^hi there$', r'^hello there$', r'^hey there$', r'^hi!$', r'^hello!$',
+        r'^sup$', r'^what\'?s up$', r'^yo$', r'^hiya$', r'^good morning$',
+        r'^good afternoon$', r'^good evening$', r'^how are you$', r'^how\'?s it going$'
+    ]
+    
+    question_lower = question.lower().strip()
+    
+    for pattern in greeting_patterns:
+        if re.match(pattern, question_lower):
+            return True
+            
+    return False
+
+def handle_casual_conversation(question):
+    """
+    Use Gemini to respond to casual conversation starters like greetings.
+    
+    Args:
+        question (str): The user's casual input
+        
+    Returns:
+        str: Gemini's conversational response
+    """
+    if not configure_genai():
+        # Provide mock answer if API key is not configured
+        return "Hello! I'm your expense assistant. How can I help you with your expenses today?"
+    
+    try:
+        prompt = f"""
+        You are an AI expense assistant that helps users analyze their receipts and expenses.
+        Respond to this casual greeting in a friendly, helpful way, mentioning that you can help with expense tracking.
+        Keep it brief and natural.
+        
+        User input: "{question}"
+        """
+        
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        logger.error(f"Error in handle_casual_conversation: {str(e)}")
+        return "Hello! I'm your expense assistant. How can I help you with your expenses today?"
+
 def ask_gemini(question, receipt_data):
     """
     Use Gemini AI to answer questions about expense data.

@@ -76,46 +76,49 @@ export default function SignupFormPage() {
   // Function to predict cluster ID
   const predictClusterId = async (user, formData) => {
     try {
-      const idToken = await user.getIdToken();
-      
-      // Extract features needed for model prediction
-      const predictionData = {
-        gender: formData.gender,
-        age: formData.birthday ? calculateAge(formData.birthday) : 30, // default age if not provided
-        income: parseInt(formData.monthly_salary) || 0,
-        education_level: formData.education_level,
-        occupation: formData.occupation,
-        marital_status: formData.marital_status,
-        num_children: parseInt(formData.family_member_count) || 0,
-        location_type: formData.home_town, // using home_town as location_type
-        exercise_frequency: formData.exercise_frequency,
-        car_ownership: formData.car_ownership.toLowerCase() === "yes" ? 1 : 0,
-      };
-      
-      console.log("Prediction data:", predictionData);
-      
-      const response = await fetch("http://127.0.0.1:8000/user/predict-cluster", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(predictionData),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Prediction failed: ${response.status} ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log("Prediction result:", result);
-      
-      // Return the predicted cluster ID
-      return result.cluster_id;
+        const idToken = await user.getIdToken();
+        
+        // Extract features needed for model prediction
+        const predictionData = {
+            gender: formData.gender,
+            age: formData.birthday ? calculateAge(formData.birthday) : 30,
+            income: parseInt(formData.monthly_salary) || 0,
+            education_level: formData.education_level,
+            occupation: formData.occupation,
+            marital_status: formData.marital_status,
+            num_children: parseInt(formData.family_member_count) || 0,
+            location_type: formData.home_town,
+            exercise_frequency: formData.exercise_frequency,
+            car_ownership: formData.car_ownership.toLowerCase() === "yes" ? 1 : 0,
+        };
+        
+        console.log("Prediction data:", predictionData);
+        
+        const response = await fetch("http://127.0.0.1:8000/user/predict-cluster", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${idToken}`,
+            },
+            body: JSON.stringify(predictionData),
+        });
+        
+        if (!response.ok) {
+            console.error("Prediction failed with status:", response.status); // Added error logging
+            return null;
+        }
+        
+        const result = await response.json();
+        console.log("Prediction result:", result);
+        
+        // Return the predicted cluster ID
+        setClusterId(result.cluster_id);
+        
+        return result.cluster_id;
     } catch (error) {
-      console.error("Prediction error:", error);
-      // Return null if prediction fails
-      return null;
+        console.error("Prediction error:", error);
+        // Return null if prediction fails
+        return null;
     }
   };
 
@@ -141,8 +144,11 @@ export default function SignupFormPage() {
       
       // Set state with prediction results
       setClusterPredicted(true);
-      setClusterId(predictedClusterId);
-      
+      // setClusterId(predictedClusterId !== null ? predictedClusterId : 1);
+      setClusterId(1);  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+      // We continue with the registration process even if cluster update fails
+
       // Prepare user data with predicted cluster ID
       const requestData = {
         uid: user.uid,
@@ -172,6 +178,7 @@ export default function SignupFormPage() {
         },
         body: JSON.stringify(requestData),
       });
+      
 
       if (!response.ok) {
         let errorData;

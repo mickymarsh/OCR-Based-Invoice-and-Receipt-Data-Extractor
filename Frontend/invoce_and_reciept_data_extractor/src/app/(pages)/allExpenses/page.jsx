@@ -115,7 +115,7 @@ export default function AllExpenses() {
             month: "2-digit",
             day: "2-digit",
           }),
-          name: `Expense ${index + 1}`, // Default name since backend doesn't provide names
+          name: r.seller_name, // Default name since backend doesn't provide names
           category: r.category,
           amount: parseFloat(r.total_price).toLocaleString("en-LK", { minimumFractionDigits: 2 }),
           categoryColor: categoryColors[r.category] || "bg-gray-500/10 text-gray-700",

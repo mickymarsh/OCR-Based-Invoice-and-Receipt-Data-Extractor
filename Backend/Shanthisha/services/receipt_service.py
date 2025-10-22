@@ -92,7 +92,8 @@ def get_receipts_by_month(user_id: str, month: int, year: int) -> List[ReceiptOu
                     result.append({
                         "category": data.get("category", ""),
                         "date": date_obj,
-                        "total_price": float(data.get("total_price", 0))
+                        "total_price": float(data.get("total_price", 0)),
+                        "seller_name": data.get("seller_name", "")
                     })
         
         print(f"[INFO] Total receipts found: {count}, filtered by month {month}/{year}: {filtered_count}")
