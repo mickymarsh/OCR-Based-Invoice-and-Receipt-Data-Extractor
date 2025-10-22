@@ -138,6 +138,64 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
     if (isNaN(parsed)) return '';
     return new Date(parsed).toISOString();
   };
+  // Parse invoice total strings into a numeric value.
+  // Handles examples like "$ 124,79", "1.234,56", "1,234.56", "USD124.50" and removes noisy characters.
+  const parseInvoiceNumber = (raw) => {
+    if (raw === null || raw === undefined) return NaN;
+    let s = String(raw).trim();
+    if (s === '') return NaN;
+    // keep only digits, comma, dot and minus (remove currency letters/symbols and whitespace)
+    s = s.replace(/[^0-9.,-]/g, '');
+    // remove any minus signs not at the start
+    s = s.replace(/(?!^)-/g, '');
+
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+
+    if (lastDot !== -1 && lastComma !== -1) {
+      // Both present: assume the last-occurring separator is the decimal separator
+      const decimalSep = lastComma > lastDot ? ',' : '.';
+      const thousandSep = decimalSep === ',' ? '.' : ',';
+      const reThousand = new RegExp('\\' + thousandSep, 'g');
+      s = s.replace(reThousand, '');
+      if (decimalSep === ',') s = s.replace(/,/g, '.');
+    } else if (lastComma !== -1) {
+      // Only commas present
+      const parts = s.split(',');
+      const lastPartLen = parts[parts.length - 1].length;
+      // If groups of three on the left side, treat commas as thousand separators
+      const leftGroupsAreThrees = parts.length > 1 && parts.slice(0, -1).every(p => p.length === 3);
+      if (leftGroupsAreThrees) {
+        s = parts.join('');
+      } else if (lastPartLen === 2 || lastPartLen === 1) {
+        // likely decimal separator (e.g. 124,79)
+        s = s.replace(/,/g, '.');
+      } else {
+        // ambiguous - remove commas
+        s = parts.join('');
+      }
+    } else if (lastDot !== -1) {
+      // Only dots present
+      const parts = s.split('.');
+      const leftGroupsAreThrees = parts.length > 1 && parts.slice(0, -1).every(p => p.length === 3);
+      if (leftGroupsAreThrees) {
+        s = parts.join('');
+      }
+      // otherwise dot is decimal and left as-is
+    }
+
+    // Remove any leftover unwanted characters
+    s = s.replace(/[^0-9.\-]/g, '');
+    // If multiple dots remain, keep the first as decimal separator
+    const firstDot = s.indexOf('.');
+    if (firstDot !== -1) {
+      s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
+    }
+
+    if (s === '' || s === '-' || s === '.' || s === '-.') return NaN;
+    const num = Number(s);
+    return Number.isFinite(num) ? num : NaN;
+  };
   // Save to DB after confirmation
   const handleSaveToDB = async () => {
     setSaving(true);
@@ -177,7 +235,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
       // invoice_total: ensure numeric
       if (frontendKey === "invoice_total") {
         const raw = patchedData[frontendKey] ?? '';
-        const num = parseFloat(String(raw).replace(/[^0-9.-]+/g, ''));
+        const num = parseInvoiceNumber(raw);
         invoiceData[backendKey] = isNaN(num) ? 0 : num;
         return;
       }
@@ -244,7 +302,7 @@ export default function InvoiceSidebar({ data, editing, onEdit, onSave, onDataCh
   if (!due) errs.due_date = 'Please provide a valid due date.';
   // invoice_total must be a numeric float
   const totalRaw = data && (data.invoice_total !== undefined) ? data.invoice_total : '';
-  const totalNum = parseFloat(String(totalRaw).replace(/,/g, ''));
+  const totalNum = parseInvoiceNumber(totalRaw);
   if (totalRaw === '' || isNaN(totalNum)) errs.invoice_total = 'Please enter invoice total (number).';
   setRequiredErrors(errs);
   return Object.keys(errs).length === 0;
