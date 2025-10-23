@@ -110,6 +110,29 @@ def _heuristic_classify(text: str) -> str:
     return "unknown"
 
 
+def _heuristic_expense_type(text: str) -> str:
+    """Heuristic mapping of document text to an expense category.
+
+    Returns one of the canonical categories (capitalized) or 'unknown'.
+    This is used when the external Gemini key is not present or the agent fails.
+    """
+    t = (text or "").lower()
+    # map keywords to categories
+    mapping = {
+        "food": ["restaurant", "cafe", "coffee", "diner", "meal", "menu", "takeaway", "uber eats", "delivery", "mcdonald", "kfc", "pizza", "grocer", "supermarket", "grocery", "burger", "bakery"],
+        "transport": ["uber", "taxi", "lyft", "train", "bus", "tram", "metro", "transport", "fare", "ticket", "flight", "airport", "cab"],
+        "utilities": ["electricity", "water", "gas bill", "utility", "utilities", "meter", "energy", "e-on", "monthly bill"],
+        "entertainment": ["movie", "cinema", "concert", "netflix", "spotify", "entertainment", "show", "theatre"],
+        "shopping": ["store", "shop", "amazon", "purchase", "retail", "shopping", "mall", "paid to"],
+        "healthcare": ["pharmacy", "doctor", "hospital", "clinic", "healthcare", "medical", "dentist", "rx", "prescription"]
+    }
+    for cat, kwlist in mapping.items():
+        for kw in kwlist:
+            if kw in t:
+                return cat.capitalize()
+    return "unknown"
+
+
 def classify_document(text: str) -> dict:
     """LangGraph-style: first classify doc type, then expense type if needed. Returns dict."""
     def gemini_doc_type_agent(text: str) -> str:
@@ -146,15 +169,15 @@ Return only one word: receipt, invoice, or unknown.
 
     def gemini_expense_type_agent(text: str) -> str:
         if not GEMINI_KEY_DOCS:
-            logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic classifier")
-            return _heuristic_classify(text)
+            logger.warning("GEMINI_KEY_DOCS is not set, using local heuristic expense classifier")
+            return _heuristic_expense_type(text)
         prompt = f"""
-Given the following document text, classify the expense type as one of: food, transport, utilities, entertainment, shopping, healthcare, or unknown.
+Given the following document text, classify the expense type as one of: Food, Transport, Utilities, Entertainment, Shopping, Healthcare, or unknown.
 
 Text:
 {text}
 
-Return only one word: food, transport, utilities, entertainment, shopping, healthcare, or unknown.
+Return only one word: Food, Transport, Utilities, Entertainment, Shopping, Healthcare, or unknown.
 """
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         headers = {"Content-Type": "application/json"}
@@ -165,19 +188,26 @@ Return only one word: food, transport, utilities, entertainment, shopping, healt
             candidates = data.get("candidates", [])
             if candidates:
                 txt = candidates[0]["content"]["parts"][0]["text"].strip().lower()
-                for cat in ["food", "transport", "utilities", "entertainment", "shopping", "healthcare"]:
-                    if cat in txt:
+                # match against lowercase category names to avoid case mismatch
+                for cat in ["Food", "Transport", "Utilities", "Entertainment", "Shopping", "Healthcare"]:
+                    if cat.lower() in txt:
                         return cat
                 if "unknown" in txt:
                     return "unknown"
         except Exception as e:
             logger.error("Gemini expense_type agent failed: %s", e)
-            return _heuristic_classify(text)
-        return _heuristic_classify(text)
+            return _heuristic_expense_type(text)
+        # fallback to heuristic expense classifier (not the document-type classifier)
+        return _heuristic_expense_type(text)
 
     doc_type = gemini_doc_type_agent(text)
     if doc_type in ("receipt", "invoice"):
         expense_type = gemini_expense_type_agent(text)
     else:
         expense_type = "unknown"
+    # Ensure expense_type returns with uppercase first letter (e.g. 'Food', 'Unknown')
+    try:
+        expense_type = (expense_type or "").capitalize()
+    except Exception:
+        expense_type = "Unknown"
     return {"document_type": doc_type, "expense_type": expense_type}
