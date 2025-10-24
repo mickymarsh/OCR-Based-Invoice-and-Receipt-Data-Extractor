@@ -144,8 +144,7 @@ export default function SignupFormPage() {
       
       // Set state with prediction results
       setClusterPredicted(true);
-      // setClusterId(predictedClusterId !== null ? predictedClusterId : 1);
-      setClusterId(1);  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      setClusterId(predictedClusterId !== null ? predictedClusterId : 1);
 
       // We continue with the registration process even if cluster update fails
 
