@@ -65,7 +65,7 @@ export default function Home() {
             OCR-Based Receipt & Invoice Scanner
           </h1>
           <p className="text-xl text-teal-700 max-w-3xl mb-8 leading-relaxed">
-            Transform your document management with AI-powered optical character recognition.
+            Transform your document management with AI powered optical character recognition.
             Extract data instantly from receipts and invoices with unparalleled accuracy.
           </p>
 
